@@ -7,6 +7,7 @@ def init_python_logging(
     lovely_tensors: bool = False,
     lovely_numpy: bool = False,
     rich: bool = False,
+    rich_tracebacks: bool = False,
     log_level: int | str | None = logging.INFO,
     log_save_dir: Path | None = None,
 ):
@@ -40,7 +41,7 @@ def init_python_logging(
         try:
             from rich.logging import RichHandler
 
-            log_handlers.append(RichHandler())
+            log_handlers.append(RichHandler(rich_tracebacks=rich_tracebacks))
         except ImportError:
             logging.warning(
                 "Failed to import rich. Falling back to default Python logging."
@@ -61,6 +62,7 @@ def pretty(
     log_level: int | str | None = logging.INFO,
     log_save_dir: Path | None = None,
     rich_log_handler: bool = True,
+    rich_tracebacks: bool = True,
 ):
     init_python_logging(
         lovely_tensors=lovely_tensors,
@@ -68,6 +70,7 @@ def pretty(
         rich=rich_log_handler,
         log_level=log_level,
         log_save_dir=log_save_dir,
+        rich_tracebacks=rich_tracebacks,
     )
 
 
@@ -78,6 +81,7 @@ def lovely(
     log_level: int | str | None = logging.INFO,
     log_save_dir: Path | None = None,
     rich_log_handler: bool = True,
+    rich_tracebacks: bool = True,
 ):
     pretty(
         lovely_tensors=lovely_tensors,
@@ -85,4 +89,5 @@ def lovely(
         log_level=log_level,
         log_save_dir=log_save_dir,
         rich_log_handler=rich_log_handler,
+        rich_tracebacks=rich_tracebacks,
     )
