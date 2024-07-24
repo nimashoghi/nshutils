@@ -15,24 +15,25 @@ from typing_extensions import Never, ParamSpec, TypeVar, override
 
 from ..collections import apply_to_collection
 
-try:
+if not TYPE_CHECKING:
+    try:
+        import torch  # type: ignore
+
+        Tensor: TypeAlias = torch.Tensor
+    except ImportError:
+        torch = None
+
+        Tensor: TypeAlias = Never
+else:
     import torch  # type: ignore
 
-    if not TYPE_CHECKING:
-        Tensor: TypeAlias = torch.Tensor
-except ImportError:
-    torch = None
+    Tensor: TypeAlias = torch.Tensor
 
-    if not TYPE_CHECKING:
-        Tensor: TypeAlias = Never
-
-if TYPE_CHECKING:
-    Tensor: TypeAlias = Never
 
 log = getLogger(__name__)
 
 Value: TypeAlias = int | float | complex | bool | str | np.ndarray | Tensor | None
-ValueOrLambda = Value | Callable[..., Value]
+ValueOrLambda: TypeAlias = Value | Callable[..., Value]
 
 
 def _torch_is_scripting() -> bool:
