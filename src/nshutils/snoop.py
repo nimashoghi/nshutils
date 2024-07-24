@@ -16,18 +16,26 @@ try:
     import warnings
     from contextlib import nullcontext
 
-    import lovely_numpy as lo
-    import lovely_tensors as lt
-    import numpy
     import pysnooper
     import pysnooper.utils
-    import torch
     from pkg_resources import DistributionNotFound, get_distribution
+
+    try:
+        import torch
+    except ImportError:
+        torch = None
+
+    try:
+        import numpy
+    except ImportError:
+        numpy = None
 
     FLOATING_POINTS = set()
     for i in ["float", "double", "half", "complex128", "complex32", "complex64"]:
-        if hasattr(torch, i):  # older version of PyTorch do not have complex dtypes
-            FLOATING_POINTS.add(getattr(torch, i))
+        # older version of PyTorch do not have complex dtypes
+        if torch is not None and not hasattr(torch, i):
+            continue
+        FLOATING_POINTS.add(getattr(torch, i))
 
     try:
         __version__ = get_distribution(__name__).version
@@ -37,13 +45,19 @@ try:
 
     def default_format(x):
         try:
-            formatted = str(lt.lovely(x))
-            return formatted
+            import lovely_tensors as lt
+
+            return = str(lt.lovely(x))
         except BaseException:
             return str(x.shape)
 
     def default_numpy_format(x):
-        return str(lo.lovely(x))
+        try:
+            import lovely_numpy as lo
+
+            return str(lo.lovely(x))
+        except BaseException:
+            return str(x.shape)
 
     class TorchSnooper(pysnooper.tracer.Tracer):
         def __init__(
@@ -155,9 +169,9 @@ try:
 
         def compute_repr(self, x):
             orig_repr_func = pysnooper.utils.get_repr_function(x, self.orig_custom_repr)
-            if torch.is_tensor(x):
+            if torch is not None and torch.is_tensor(x):
                 return self.tensor_format(x)
-            if isinstance(x, numpy.ndarray):
+            if numpy is not None and isinstance(x, numpy.ndarray):
                 return self.numpy_format(x)
             if self.is_return_types(x):
                 return self.return_types_repr(x)
