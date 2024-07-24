@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "nshutils"
+version = "0.1.0"
+description = ""
+authors = ["Nima Shoghi <nimashoghi@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pysnooper = "^1.2.0"
+jaxtyping = "^0.2.33"
+typing-extensions = "*"
+lovely-numpy = {version = "^0.2.13", optional = true}
+lovely-tensors = {version = "^0.1.16", optional = true}
+beartype = "^0.18.5"
+lovely-jax = {version = "^0.1.3", optional = true}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
