@@ -33,7 +33,7 @@ try:
     FLOATING_POINTS = set()
     for i in ["float", "double", "half", "complex128", "complex32", "complex64"]:
         # older version of PyTorch do not have complex dtypes
-        if torch is not None and not hasattr(torch, i):
+        if torch is None or not hasattr(torch, i):
             continue
         FLOATING_POINTS.add(getattr(torch, i))
 
