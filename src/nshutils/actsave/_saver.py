@@ -16,7 +16,7 @@ from typing_extensions import Never, ParamSpec, TypeVar, override
 from ..collections import apply_to_collection
 
 try:
-    import torch
+    import torch  # type: ignore
 
     if not TYPE_CHECKING:
         Tensor: TypeAlias = torch.Tensor
@@ -145,7 +145,7 @@ Transform = Callable[[Activation], Mapping[str, ValueOrLambda]]
 
 def _ensure_supported():
     try:
-        import torch.distributed as dist
+        import torch.distributed as dist  # type: ignore
 
         if dist.is_initialized() and dist.get_world_size() > 1:
             raise RuntimeError("Only single GPU is supported at the moment")

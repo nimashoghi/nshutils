@@ -21,12 +21,12 @@ try:
     from pkg_resources import DistributionNotFound, get_distribution
 
     try:
-        import torch
+        import torch  # type: ignore
     except ImportError:
         torch = None
 
     try:
-        import numpy
+        import numpy  # type: ignore
     except ImportError:
         numpy = None
 
@@ -45,15 +45,15 @@ try:
 
     def default_format(x):
         try:
-            import lovely_tensors as lt
+            import lovely_tensors as lt  # type: ignore
 
-            return = str(lt.lovely(x))
+            return str(lt.lovely(x))
         except BaseException:
             return str(x.shape)
 
     def default_numpy_format(x):
         try:
-            import lovely_numpy as lo
+            import lovely_numpy as lo  # type: ignore
 
             return str(lo.lovely(x))
         except BaseException:

@@ -13,7 +13,7 @@ def init_python_logging(
 ):
     if lovely_tensors:
         try:
-            import lovely_tensors as _lovely_tensors
+            import lovely_tensors as _lovely_tensors  # type: ignore
 
             _lovely_tensors.monkey_patch()
         except ImportError:
@@ -23,7 +23,7 @@ def init_python_logging(
 
     if lovely_numpy:
         try:
-            import lovely_numpy as _lovely_numpy
+            import lovely_numpy as _lovely_numpy  # type: ignore
 
             _lovely_numpy.set_config(repr=_lovely_numpy.lovely)
         except ImportError:
@@ -39,7 +39,7 @@ def init_python_logging(
 
     if rich:
         try:
-            from rich.logging import RichHandler
+            from rich.logging import RichHandler  # type: ignore
 
             log_handlers.append(RichHandler(rich_tracebacks=rich_tracebacks))
         except ImportError:
