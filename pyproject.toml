@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nshutils"
-version = "0.2.0"
+version = "0.3.0"
 description = ""
 authors = ["Nima Shoghi <nimashoghi@gmail.com>"]
 readme = "README.md"
@@ -11,8 +11,21 @@ pysnooper = "^1.2.0"
 jaxtyping = "^0.2.33"
 typing-extensions = "*"
 beartype = "^0.18.5"
+numpy = "*"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pyright]
+typeCheckingMode = "standard"
+deprecateTypingAliases = true
+strictListInference = true
+strictDictionaryInference = true
+strictSetInference = true
+reportPrivateImportUsage = false
+ignore = ["./build/"]
+
+[tool.ruff.lint]
+ignore = ["F722", "F821", "E731", "E741"]
