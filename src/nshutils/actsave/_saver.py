@@ -53,11 +53,11 @@ def _to_numpy(activation: Value) -> np.ndarray:
     elif isinstance(activation, np.ndarray):
         return activation
     elif isinstance(activation, Tensor):
-        activation = activation.detach()
-        if activation.is_floating_point():
+        activation_ = activation.detach()
+        if activation_.is_floating_point():
             # NOTE: We need to convert to float32 because [b]float16 is not supported by numpy
-            activation = activation.float()
-        return activation.cpu().numpy()
+            activation_ = activation_.float()
+        return activation_.cpu().numpy()
     else:
         log.warning(f"Unrecognized activation type {type(activation)}")
 
@@ -358,4 +358,3 @@ class ActSaveProvider:
 
 
 ActSave = ActSaveProvider()
-ActivationSaver = ActSave
