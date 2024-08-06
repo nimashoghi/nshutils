@@ -14,7 +14,7 @@ pip install nshutils
 
 ### Typechecking
 
-`nshutils` provides a simple way to typecheck your code using the `jaxtyping` library. Simply call `typecheck_this_module()` at the top of your module (i.e., in the root `__init__.py` file) to enable typechecking for the entire module:
+`nshutils` provides a simple way to typecheck your code using the [`jaxtyping`](https://github.com/patrick-kidger/jaxtyping) library. Simply call `typecheck_this_module()` at the top of your module (i.e., in the root `__init__.py` file) to enable typechecking for the entire module:
 
 ```python
 from nshutils.typecheck import typecheck_this_module
