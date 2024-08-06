@@ -25,10 +25,10 @@ typecheck_this_module()
 You can also use the `tassert` function to assert that a value is of a certain type:
 
 ```python
-from nshutils.typecheck import tassert, Float32
+import nshutils.typecheck as tc
 
-def my_function(x: Float32):
-    tassert(Float32, x)
+def my_function(x: tc.Float[torch.Tensor, "bsz seq len"]) -> tc.Float[torch.Tensor, "bsz seq len"]:
+    tc.tassert(tc.Float[torch.Tensor, "bsz seq len"], x)
     ...
 ```
 
