@@ -1,7 +1,6 @@
 import contextlib
 import fnmatch
 import tempfile
-import uuid
 import weakref
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -12,6 +11,7 @@ from typing import TYPE_CHECKING, Generic, TypeAlias, cast, overload
 
 import numpy as np
 from typing_extensions import Never, ParamSpec, TypeVar, override
+from uuid_extensions import uuid7str
 
 from ..collections import apply_to_collection
 
@@ -236,21 +236,32 @@ class ActSaveProvider:
     _saver: _Saver | None = None
     _prefixes: list[str] = []
 
-    def initialize(self, save_dir: Path | None = None):
+    def enable(self, save_dir: Path | None = None):
         """
         Initializes the saver with the given configuration and save directory.
 
         Args:
             save_dir (Path): The directory where the saved files will be stored.
         """
+        if self._saver is not None:
+            log.warning("ActSave is already enabled")
+            return
+
+        if save_dir is None:
+            save_dir = Path(tempfile.gettempdir()) / f"actsave-{uuid7str()}"
+            log.critical(f"No save_dir specified, using {save_dir=}")
+        self._saver = _Saver(save_dir, lambda: self._prefixes)
+
+    def disable(self):
+        """
+        Disables the actsaver.
+        """
         if self._saver is None:
-            if save_dir is None:
-                save_dir = Path(tempfile.gettempdir()) / f"actsave-{uuid.uuid4()}"
-                log.critical(f"No save_dir specified, using {save_dir=}")
-            self._saver = _Saver(
-                save_dir,
-                lambda: self._prefixes,
-            )
+            log.warning("ActSave is already disabled")
+            return
+
+        del self._saver
+        self._saver = None
 
     @contextlib.contextmanager
     def enabled(self, save_dir: Path | None = None):
@@ -260,12 +271,16 @@ class ActSaveProvider:
         Args:
             save_dir (Path): The directory where the saved files will be stored.
         """
-        prev = self._saver
-        self.initialize(save_dir)
+        if self._saver is not None:
+            log.warning("ActSave is already enabled")
+            yield
+            return
+
+        self.enable(save_dir)
         try:
             yield
         finally:
-            self._saver = prev
+            self.disable()
 
     @override
     def __init__(self):

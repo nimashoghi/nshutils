@@ -648,7 +648,7 @@ dev = ["twine (>=3.4.1)"]
 name = "pysnooper"
 version = "1.2.0"
 description = "A poor man's debugger for Python."
-optional = false
+optional = true
 python-versions = "*"
 files = [
     {file = "PySnooper-1.2.0-py2.py3-none-any.whl", hash = "sha256:aa859aa9a746cffc1f35e4ee469d49c3cc5185b5fc0c571feb3af3c94d2eb625"},
@@ -914,6 +914,17 @@ files = [
 ]
 
 [[package]]
+name = "uuid7"
+version = "0.1.0"
+description = "UUID version 7, generating time-sorted UUIDs with 200ns time resolution and 48 bits of randomness"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "uuid7-0.1.0-py2.py3-none-any.whl", hash = "sha256:5e259bb63c8cb4aded5927ff41b444a80d0c7124e8a0ced7cf44efa1f5cccf61"},
+    {file = "uuid7-0.1.0.tar.gz", hash = "sha256:8c57aa32ee7456d3cc68c95c4530bc571646defac01895cfc73545449894a63c"},
+]
+
+[[package]]
 name = "wcwidth"
 version = "0.2.13"
 description = "Measures the displayed width of unicode strings in a terminal"
@@ -935,7 +946,10 @@ files = [
     {file = "widgetsnbextension-4.0.11.tar.gz", hash = "sha256:8b22a8f1910bfd188e596fe7fc05dcbd87e810c8a4ba010bdb3da86637398474"},
 ]
 
+[extras]
+extra = ["pysnooper"]
+
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "d206c2343f2a4f4ae1ff48a40b30df23c7b61a1dc84dd9999d066d82da2eddbb"
+content-hash = "9df474fd335508fdb3f9461d5a1d663a156788fe6514d404b793bbc803561a81"
