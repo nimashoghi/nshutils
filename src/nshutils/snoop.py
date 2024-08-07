@@ -1,4 +1,5 @@
 import contextlib
+import importlib.metadata
 from typing import Any, Protocol, cast
 
 from typing_extensions import TypeVar
@@ -18,7 +19,6 @@ try:
 
     import pysnooper  # type: ignore
     import pysnooper.utils  # type: ignore
-    from pkg_resources import DistributionNotFound, get_distribution
 
     try:
         import torch  # type: ignore
@@ -38,8 +38,8 @@ try:
         FLOATING_POINTS.add(getattr(torch, i))
 
     try:
-        __version__ = get_distribution(__name__).version
-    except DistributionNotFound:
+        __version__ = importlib.metadata.version(__name__)
+    except importlib.metadata.PackageNotFoundError:
         # package is not installed
         pass
 
