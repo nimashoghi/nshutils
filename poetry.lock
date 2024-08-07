@@ -1871,9 +1871,9 @@ files = [
 ]
 
 [extras]
-extra = ["pysnooper"]
+extra = ["lovely-numpy", "lovely-tensors", "pysnooper"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "6724ebdb7ff7fa8f8f394a7f7a459237b67873d2cc19e70a2e0c8eb5d0efdd00"
+content-hash = "660e8cd507c9ab3474e3c3e47431e569d14dc6f96f5df8d9f0c3fa9a7ea3be3c"
