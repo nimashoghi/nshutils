@@ -16,8 +16,8 @@ try:
     import warnings
     from contextlib import nullcontext
 
-    import pysnooper
-    import pysnooper.utils
+    import pysnooper  # type: ignore
+    import pysnooper.utils  # type: ignore
     from pkg_resources import DistributionNotFound, get_distribution
 
     try:
@@ -165,7 +165,7 @@ try:
                     + self.tensor_format(x.QR)
                     + ")"
                 )
-            warnings.warn("Unknown return_types encountered, open a bug report!")
+            raise ValueError("Unknown return_types encountered, open a bug report!")
 
         def compute_repr(self, x):
             orig_repr_func = pysnooper.utils.get_repr_function(x, self.orig_custom_repr)
