@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nshutils"
-version = "0.13.0"
+version = "0.14.0"
 description = ""
 authors = ["Nima Shoghi <nimashoghi@gmail.com>"]
 readme = "README.md"
@@ -15,6 +15,7 @@ jaxtyping = "*"
 typing-extensions = "*"
 beartype = "*"
 uuid7 = "*"
+treescope = { version = "*", optional = true }
 lovely-numpy = { version = "*", optional = true }
 lovely-tensors = { version = "*", optional = true }
 pysnooper = { version = "*", optional = true }
@@ -42,4 +43,4 @@ reportPrivateImportUsage = false
 ignore = ["F722", "F821", "E731", "E741"]
 
 [tool.poetry.extras]
-extra = ["pysnooper", "lovely-numpy", "lovely-tensors", "rich"]
+extra = ["pysnooper", "lovely-numpy", "lovely-tensors", "rich", "treescope"]

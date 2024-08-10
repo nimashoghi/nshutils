@@ -6,6 +6,8 @@ def init_python_logging(
     *,
     lovely_tensors: bool = False,
     lovely_numpy: bool = False,
+    treescope: bool = False,
+    treescope_autovisualize_arrays: bool = True,
     rich: bool = False,
     rich_tracebacks: bool = False,
     log_level: int | str | None = logging.INFO,
@@ -29,6 +31,18 @@ def init_python_logging(
         except ImportError:
             logging.warning(
                 "Failed to import `lovely_numpy`. Ignoring pretty numpy array formatting"
+            )
+
+    if treescope:
+        try:
+            import treescope as _treescope  # type: ignore
+
+            _treescope.basic_interactive_setup(
+                autovisualize_arrays=treescope_autovisualize_arrays
+            )
+        except ImportError:
+            logging.warning(
+                "Failed to import `treescope`. Ignoring `treescope` registration"
             )
 
     log_handlers: list[logging.Handler] = []
@@ -59,14 +73,18 @@ def pretty(
     *,
     lovely_tensors: bool = True,
     lovely_numpy: bool = True,
+    treescope: bool = True,
+    treescope_autovisualize_arrays: bool = True,
     log_level: int | str | None = logging.INFO,
     log_save_dir: Path | None = None,
-    rich_log_handler: bool = True,
-    rich_tracebacks: bool = True,
+    rich_log_handler: bool = False,
+    rich_tracebacks: bool = False,
 ):
     init_python_logging(
         lovely_tensors=lovely_tensors,
         lovely_numpy=lovely_numpy,
+        treescope=treescope,
+        treescope_autovisualize_arrays=treescope_autovisualize_arrays,
         rich=rich_log_handler,
         log_level=log_level,
         log_save_dir=log_save_dir,
@@ -78,14 +96,18 @@ def lovely(
     *,
     lovely_tensors: bool = True,
     lovely_numpy: bool = True,
+    treescope: bool = True,
+    treescope_autovisualize_arrays: bool = True,
     log_level: int | str | None = logging.INFO,
     log_save_dir: Path | None = None,
-    rich_log_handler: bool = True,
-    rich_tracebacks: bool = True,
+    rich_log_handler: bool = False,
+    rich_tracebacks: bool = False,
 ):
     pretty(
         lovely_tensors=lovely_tensors,
         lovely_numpy=lovely_numpy,
+        treescope=treescope,
+        treescope_autovisualize_arrays=treescope_autovisualize_arrays,
         log_level=log_level,
         log_save_dir=log_save_dir,
         rich_log_handler=rich_log_handler,
