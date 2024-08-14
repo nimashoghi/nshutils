@@ -19,7 +19,7 @@ def init_python_logging(
 
             _lovely_tensors.monkey_patch()
         except ImportError:
-            logging.warning(
+            logging.exception(
                 "Failed to import `lovely_tensors`. Ignoring pretty PyTorch tensor formatting"
             )
 
@@ -29,20 +29,28 @@ def init_python_logging(
 
             _lovely_numpy.set_config(repr=_lovely_numpy.lovely)
         except ImportError:
-            logging.warning(
+            logging.exception(
                 "Failed to import `lovely_numpy`. Ignoring pretty numpy array formatting"
             )
 
     if treescope:
         try:
-            import treescope as _treescope  # type: ignore
+            # Check if we're in a Jupyter environment
+            from IPython import get_ipython
 
-            _treescope.basic_interactive_setup(
-                autovisualize_arrays=treescope_autovisualize_arrays
-            )
+            if get_ipython() is not None:
+                import treescope as _treescope  # type: ignore
+
+                _treescope.basic_interactive_setup(
+                    autovisualize_arrays=treescope_autovisualize_arrays
+                )
+            else:
+                logging.exception(
+                    "Treescope setup is only supported in Jupyter notebooks. Skipping."
+                )
         except ImportError:
-            logging.warning(
-                "Failed to import `treescope`. Ignoring `treescope` registration"
+            logging.exception(
+                "Failed to import `treescope` or `IPython`. Ignoring `treescope` registration"
             )
 
     log_handlers: list[logging.Handler] = []
@@ -57,7 +65,7 @@ def init_python_logging(
 
             log_handlers.append(RichHandler(rich_tracebacks=rich_tracebacks))
         except ImportError:
-            logging.warning(
+            logging.exception(
                 "Failed to import rich. Falling back to default Python logging."
             )
 
