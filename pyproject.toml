@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nshutils"
-version = "0.17.0"
+version = "0.18.0"
 description = ""
 authors = ["Nima Shoghi <nimashoghi@gmail.com>"]
 readme = "README.md"
@@ -40,7 +40,11 @@ strictSetInference = true
 reportPrivateImportUsage = false
 
 [tool.ruff.lint]
+select = ["FA102", "FA100"]
 ignore = ["F722", "F821", "E731", "E741"]
+
+[tool.ruff.lint.isort]
+required-imports = ["from __future__ import annotations"]
 
 [tool.poetry.extras]
 extra = ["pysnooper", "lovely-numpy", "lovely-tensors", "rich", "treescope"]

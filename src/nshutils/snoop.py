@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import contextlib
 import importlib.metadata
 from typing import Any, Protocol, cast

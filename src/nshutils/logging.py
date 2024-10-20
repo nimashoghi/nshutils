@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from pathlib import Path
 
@@ -7,7 +9,7 @@ def init_python_logging(
     lovely_tensors: bool = False,
     lovely_numpy: bool = False,
     treescope: bool = False,
-    treescope_autovisualize_arrays: bool = True,
+    treescope_autovisualize_arrays: bool = False,
     rich: bool = False,
     rich_tracebacks: bool = False,
     log_level: int | str | None = logging.INFO,
@@ -81,8 +83,8 @@ def pretty(
     *,
     lovely_tensors: bool = True,
     lovely_numpy: bool = True,
-    treescope: bool = True,
-    treescope_autovisualize_arrays: bool = True,
+    treescope: bool = False,
+    treescope_autovisualize_arrays: bool = False,
     log_level: int | str | None = logging.INFO,
     log_save_dir: Path | None = None,
     rich_log_handler: bool = False,
@@ -104,8 +106,8 @@ def lovely(
     *,
     lovely_tensors: bool = True,
     lovely_numpy: bool = True,
-    treescope: bool = True,
-    treescope_autovisualize_arrays: bool = True,
+    treescope: bool = False,
+    treescope_autovisualize_arrays: bool = False,
     log_level: int | str | None = logging.INFO,
     log_save_dir: Path | None = None,
     rich_log_handler: bool = False,

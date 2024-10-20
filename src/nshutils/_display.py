@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import importlib.util
 from functools import cache
 from typing import Any
