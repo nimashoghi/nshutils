@@ -27,7 +27,7 @@ def _rich_installed():
 
 def display(*args: Any):
     """
-        Display the given arguments in the current environment.
+    Display the given arguments in the current environment.
 
     If executed in an IPython environment, the display will be handled
     by treescope if installed, or rich if available. If neither are

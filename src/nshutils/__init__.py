@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from . import actsave as actsave
 from . import typecheck as typecheck
-from ._display import display as display
 from .actsave import ActLoad as ActLoad
 from .actsave import ActSave as ActSave
+from .display import display as display
 from .logging import init_python_logging as init_python_logging
 from .logging import lovely as lovely
 from .logging import pretty as pretty
