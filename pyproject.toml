@@ -1,28 +1,21 @@
-[tool.poetry]
+[project]
 name = "nshutils"
-version = "0.18.0"
+version = "0.19.0"
 description = ""
-authors = ["Nima Shoghi <nimashoghi@gmail.com>"]
+authors = [{ name = "Nima Shoghi", email = "nimashoghi@gmail.com" }]
+requires-python = ">=3.10,<4.0"
 readme = "README.md"
 
-[tool.poetry.urls]
+dependencies = ["numpy", "jaxtyping", "typing-extensions", "beartype", "uuid7"]
+
+[project.optional-dependencies]
+extra = ["pysnooper", "lovely-numpy", "lovely-tensors", "rich", "treescope"]
+
+[project.urls]
 homepage = "https://github.com/nimashoghi/nshutils"
 
-[tool.poetry.dependencies]
-python = "^3.10"
-numpy = "*"
-jaxtyping = "*"
-typing-extensions = "*"
-beartype = "*"
-uuid7 = "*"
-treescope = { version = "*", optional = true }
-lovely-numpy = { version = "*", optional = true }
-lovely-tensors = { version = "*", optional = true }
-pysnooper = { version = "*", optional = true }
-rich = { version = "*", optional = true }
-
 [tool.poetry.group.dev.dependencies]
-pyright = "*"
+basedpyright = "*"
 ruff = "*"
 ipykernel = "*"
 ipywidgets = "*"
@@ -31,7 +24,7 @@ ipywidgets = "*"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.pyright]
+[tool.basedpyright]
 typeCheckingMode = "standard"
 deprecateTypingAliases = true
 strictListInference = true
@@ -45,6 +38,3 @@ ignore = ["F722", "F821", "E731", "E741"]
 
 [tool.ruff.lint.isort]
 required-imports = ["from __future__ import annotations"]
-
-[tool.poetry.extras]
-extra = ["pysnooper", "lovely-numpy", "lovely-tensors", "rich", "treescope"]
