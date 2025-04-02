@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import os
+import sys
 from collections.abc import Sequence
 from logging import getLogger
+from types import FrameType as _FrameType
 from typing import Any
 
 from jaxtyping import BFloat16 as BFloat16
@@ -78,6 +80,21 @@ def typecheck_modules(modules: Sequence[str]):
     log.critical(f"Type checking the following modules: {modules}")
 
 
+def _get_frame_package_name_or_none(frame: _FrameType) -> str | None:
+    # Taken from `beartype._util.func.utilfuncframe.get_frame_package_name_or_none`.
+    assert isinstance(frame, _FrameType), f"{repr(frame)} not stack frame."
+
+    # Fully-qualified name of the parent package of the child module declaring
+    # the callable whose code object is that of this stack frame's if that
+    # module declares its name *OR* the empty string otherwise (e.g., if that
+    # module is either a top-level module or script residing outside any parent
+    # package structure).
+    frame_package_name = frame.f_globals.get("__package__")
+
+    # Return the name of this parent package.
+    return frame_package_name
+
+
 def typecheck_this_module(additional_modules: Sequence[str] = ()):
     """
     Typecheck the calling module and any additional modules using `jaxtyping`.
@@ -88,13 +105,11 @@ def typecheck_this_module(additional_modules: Sequence[str] = ()):
     # Get the calling module's name.
     # Here, we can just use beartype's internal implementation behind
     # `beartype_this_package`.
-    from beartype._util.func.utilfuncframe import get_frame, get_frame_package_name
 
     # Get the calling module's name.
-    assert get_frame is not None, "get_frame is None"
-    frame = get_frame(1)
+    frame = sys._getframe(1)
     assert frame is not None, "frame is None"
-    calling_module_name = get_frame_package_name(frame)
+    calling_module_name = _get_frame_package_name_or_none(frame)
     assert calling_module_name is not None, "calling_module_name is None"
 
     # Typecheck the calling module + any additional modules.
