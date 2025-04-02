@@ -15,6 +15,7 @@ class SnoopConstructor(Protocol):
     def disable(self) -> contextlib.AbstractContextManager: ...
 
 
+snoop: SnoopConstructor
 try:
     import warnings
     from contextlib import nullcontext
@@ -203,7 +204,7 @@ try:
         disable = nullcontext
         __call__ = TorchSnooper
 
-    snoop: SnoopConstructor = cast(Any, _Snoop())
+    snoop = cast(Any, _Snoop())
 
 except ImportError:
     import warnings
@@ -229,4 +230,4 @@ except ImportError:
 
             return super().__enter__()
 
-    snoop: SnoopConstructor = cast(Any, _snoop_cls)
+    snoop = cast(Any, _snoop_cls)
