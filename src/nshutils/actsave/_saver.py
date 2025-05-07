@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Generic, TypeAlias, cast, overload
 
 import numpy as np
-from typing_extensions import Never, ParamSpec, TypeVar, override
+from typing_extensions import Never, ParamSpec, TypeAliasType, TypeVar, override
 from uuid_extensions import uuid7str
 
 from ..collections import apply_to_collection
@@ -21,21 +21,23 @@ if not TYPE_CHECKING:
     try:
         import torch  # type: ignore
 
-        Tensor: TypeAlias = torch.Tensor
+        Tensor = torch.Tensor
     except ImportError:
         torch = None
 
-        Tensor: TypeAlias = Never
+        Tensor = Never
 else:
     import torch  # type: ignore
 
-    Tensor: TypeAlias = torch.Tensor
+    Tensor = torch.Tensor
 
 
 log = getLogger(__name__)
 
-Value: TypeAlias = int | float | complex | bool | str | np.ndarray | Tensor | None
-ValueOrLambda: TypeAlias = Value | Callable[..., Value]
+Value = TypeAliasType(
+    "Value", int | float | complex | bool | str | np.ndarray | Tensor | None
+)
+ValueOrLambda = TypeAliasType("ValueOrLambda", Value | Callable[..., Value])
 
 
 def _torch_is_scripting() -> bool:

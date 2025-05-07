@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import logging
 import os
 import sys
 from collections.abc import Sequence
-from logging import getLogger
 from types import FrameType as _FrameType
 from typing import Any
 
@@ -52,7 +52,8 @@ try:
     import jax  # type: ignore
 except ImportError:
     jax = None
-log = getLogger(__name__)
+
+log = logging.getLogger(__name__)
 
 DISABLE_ENV_KEY = "NSHUTILS_DISABLE_TYPECHECKING"
 

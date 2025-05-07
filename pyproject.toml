@@ -6,10 +6,20 @@ authors = [{ name = "Nima Shoghi", email = "nimashoghi@gmail.com" }]
 requires-python = ">=3.10,<4.0"
 readme = "README.md"
 
-dependencies = ["numpy", "jaxtyping", "typing-extensions", "beartype", "uuid7"]
+dependencies = [
+    "lazy-loader",
+    "numpy",
+    "typing-extensions",
+    "jaxtyping",
+    "beartype",
+    "uuid7",
+    "nshconfig",
+]
 
 [project.optional-dependencies]
-extra = ["pysnooper", "lovely-numpy", "lovely-tensors", "rich", "treescope"]
+snoop = ["pysnooper"]
+pprint = ["rich[jupyter]", "treescope"]
+extra = ["pysnooper", "rich[jupyter]", "treescope"]
 
 [project.urls]
 homepage = "https://github.com/nimashoghi/nshutils"

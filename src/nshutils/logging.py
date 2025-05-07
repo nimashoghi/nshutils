@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .lovely._monkey_patch_all import Library
 
 
-def init_python_logging(
+def setup_logging(
     *,
-    lovely_tensors: bool = False,
-    lovely_numpy: bool = False,
+    lovely: bool | list[Library] = False,
     treescope: bool = False,
     treescope_autovisualize_arrays: bool = False,
     rich: bool = False,
@@ -15,25 +18,10 @@ def init_python_logging(
     log_level: int | str | None = logging.INFO,
     log_save_dir: Path | None = None,
 ):
-    if lovely_tensors:
-        try:
-            import lovely_tensors as _lovely_tensors  # type: ignore
+    if lovely:
+        from .lovely._monkey_patch_all import monkey_patch
 
-            _lovely_tensors.monkey_patch()
-        except ImportError:
-            logging.info(
-                "Failed to import `lovely_tensors`. Ignoring pretty PyTorch tensor formatting"
-            )
-
-    if lovely_numpy:
-        try:
-            import lovely_numpy as _lovely_numpy  # type: ignore
-
-            _lovely_numpy.set_config(repr=_lovely_numpy.lovely)
-        except ImportError:
-            logging.info(
-                "Failed to import `lovely_numpy`. Ignoring pretty numpy array formatting"
-            )
+        monkey_patch("auto" if lovely is True else lovely)
 
     if treescope:
         try:
@@ -77,49 +65,11 @@ def init_python_logging(
         datefmt="[%X]",
         handlers=log_handlers,
     )
-
-
-def pretty(
-    *,
-    lovely_tensors: bool = True,
-    lovely_numpy: bool = True,
-    treescope: bool = False,
-    treescope_autovisualize_arrays: bool = False,
-    log_level: int | str | None = logging.INFO,
-    log_save_dir: Path | None = None,
-    rich_log_handler: bool = False,
-    rich_tracebacks: bool = False,
-):
-    init_python_logging(
-        lovely_tensors=lovely_tensors,
-        lovely_numpy=lovely_numpy,
-        treescope=treescope,
-        treescope_autovisualize_arrays=treescope_autovisualize_arrays,
-        rich=rich_log_handler,
-        log_level=log_level,
-        log_save_dir=log_save_dir,
-        rich_tracebacks=rich_tracebacks,
+    logging.info(
+        "Logging initialized. "
+        f"Lovely: {lovely}, Treescope: {treescope}, Rich: {rich}, "
+        f"Log level: {log_level}, Log save dir: {log_save_dir}"
     )
 
 
-def lovely(
-    *,
-    lovely_tensors: bool = True,
-    lovely_numpy: bool = True,
-    treescope: bool = False,
-    treescope_autovisualize_arrays: bool = False,
-    log_level: int | str | None = logging.INFO,
-    log_save_dir: Path | None = None,
-    rich_log_handler: bool = False,
-    rich_tracebacks: bool = False,
-):
-    pretty(
-        lovely_tensors=lovely_tensors,
-        lovely_numpy=lovely_numpy,
-        treescope=treescope,
-        treescope_autovisualize_arrays=treescope_autovisualize_arrays,
-        log_level=log_level,
-        log_save_dir=log_save_dir,
-        rich_log_handler=rich_log_handler,
-        rich_tracebacks=rich_tracebacks,
-    )
+init_python_logging = setup_logging
