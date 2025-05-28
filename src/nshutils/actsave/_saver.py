@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from functools import wraps
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Generic, Literal, Union, cast, overload
+from typing import TYPE_CHECKING, Any, Generic, Literal, Union, cast, overload
 
 import numpy as np
 from typing_extensions import Never, ParamSpec, TypeAliasType, TypeVar, override
@@ -36,8 +36,9 @@ else:
 
 log = getLogger(__name__)
 
+# Updated to include Any for arbitrary types
 Value = TypeAliasType(
-    "Value", Union[int, float, complex, bool, str, np.ndarray, Tensor, None]
+    "Value", Union[int, float, complex, bool, str, np.ndarray, Tensor, Any, None]
 )
 ValueOrLambda = TypeAliasType("ValueOrLambda", Union[Value, Callable[..., Value]])
 
@@ -65,9 +66,8 @@ def _to_numpy(activation: Value) -> np.ndarray:
             activation_ = activation_.float()
         return activation_.cpu().numpy()
     else:
-        log.warning(f"Unrecognized activation type {type(activation)}")
-
-    return activation
+        # Handle arbitrary objects using numpy object dtype
+        return np.array(activation, dtype=object)
 
 
 T = TypeVar("T", infer_variance=True)
