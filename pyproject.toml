@@ -3,7 +3,7 @@ name = "nshutils"
 version = "0.20.0"
 description = ""
 authors = [{ name = "Nima Shoghi", email = "nimashoghi@gmail.com" }]
-requires-python = ">=3.10,<4.0"
+requires-python = ">=3.9,<4.0"
 readme = "README.md"
 
 dependencies = [
@@ -18,8 +18,8 @@ dependencies = [
 
 [project.optional-dependencies]
 snoop = ["pysnooper"]
-pprint = ["rich[jupyter]", "treescope"]
-extra = ["pysnooper", "rich[jupyter]", "treescope"]
+pprint = ["rich[jupyter]", "treescope; python_version >= '3.10'"]
+extra = ["pysnooper", "rich[jupyter]", "treescope; python_version >= '3.10'"]
 
 [project.urls]
 homepage = "https://github.com/nimashoghi/nshutils"
