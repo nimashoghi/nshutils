@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from functools import wraps
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Generic, Literal, cast, overload
+from typing import TYPE_CHECKING, Generic, Literal, Union, cast, overload
 
 import numpy as np
 from typing_extensions import Never, ParamSpec, TypeAliasType, TypeVar, override
@@ -37,9 +37,9 @@ else:
 log = getLogger(__name__)
 
 Value = TypeAliasType(
-    "Value", int | float | complex | bool | str | np.ndarray | Tensor | None
+    "Value", Union[int, float, complex, bool, str, np.ndarray, Tensor, None]
 )
-ValueOrLambda = TypeAliasType("ValueOrLambda", Value | Callable[..., Value])
+ValueOrLambda = TypeAliasType("ValueOrLambda", Union[Value, Callable[..., Value]])
 
 
 def _torch_is_scripting() -> bool:
