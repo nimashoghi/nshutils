@@ -1,15 +1,15 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import ClassVar
 
-import nshconfig as C
 from typing_extensions import Self
 
 
-class LovelyConfig(C.Config):
+@dataclass
+class LovelyConfig:
     """
     This class is used to manage the configuration of the Lovely library.
-    It inherits from the Config class in the nshconfig module.
     """
 
     precision: int = 3

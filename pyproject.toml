@@ -13,7 +13,6 @@ dependencies = [
     "jaxtyping",
     "beartype",
     "uuid7",
-    "nshconfig",
 ]
 
 [project.optional-dependencies]
