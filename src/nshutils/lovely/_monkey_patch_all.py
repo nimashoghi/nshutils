@@ -41,21 +41,20 @@ def monkey_patch(libraries: list[Library] | Literal["auto"] = "auto"):
 
     with contextlib.ExitStack() as stack:
         for library in libraries:
-            match library:
-                case "torch":
-                    from .torch_ import torch_monkey_patch
+            if library == "torch":
+                from .torch_ import torch_monkey_patch
 
-                    stack.enter_context(torch_monkey_patch())
-                case "jax":
-                    from .jax_ import jax_monkey_patch
+                stack.enter_context(torch_monkey_patch())
+            elif library == "jax":
+                from .jax_ import jax_monkey_patch
 
-                    stack.enter_context(jax_monkey_patch())
-                case "numpy":
-                    from .numpy_ import numpy_monkey_patch
+                stack.enter_context(jax_monkey_patch())
+            elif library == "numpy":
+                from .numpy_ import numpy_monkey_patch
 
-                    stack.enter_context(numpy_monkey_patch())
-                case _:
-                    assert_never(library)
+                stack.enter_context(numpy_monkey_patch())
+            else:
+                assert_never(library)
 
         log.info(
             f"Monkey patched libraries: {', '.join(libraries)}. "
