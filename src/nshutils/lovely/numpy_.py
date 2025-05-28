@@ -51,7 +51,7 @@ def _dtype_str(array: np.ndarray) -> str:
     return dtype_base
 
 
-@lovely_repr(dependencies=["numpy"], fallback_repr=np.array_repr)
+@lovely_repr(dependencies=["numpy"])
 def numpy_repr(array: np.ndarray) -> LovelyStats | None:
     # For dtypes like `object` or `str`, we let the fallback repr handle it
     if not np.issubdtype(array.dtype, np.number):
@@ -69,6 +69,9 @@ def numpy_repr(array: np.ndarray) -> LovelyStats | None:
         # Depending of whether the tensor is complex or not, we will call the appropriate stats function
         **array_stats(array),
     }
+
+
+numpy_repr.set_fallback_repr(np.array_repr)
 
 
 # If numpy 2.0, use the new API override_repr.

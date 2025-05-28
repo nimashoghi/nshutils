@@ -53,7 +53,7 @@ def _device(array: jax.Array) -> str:
     return f"{device.platform}:{device.id}"
 
 
-@lovely_repr(dependencies=["jax"], fallback_repr=jax.Array.__repr__)
+@lovely_repr(dependencies=["jax"])
 def jax_repr(array: jax.Array) -> LovelyStats | None:
     import jax.numpy as jnp
 
@@ -83,6 +83,7 @@ def jax_monkey_patch():
 
     prev_repr = array.ArrayImpl.__repr__
     prev_str = array.ArrayImpl.__str__
+    jax_repr.set_fallback_repr(prev_repr)
     try:
         patch_to(array.ArrayImpl, "__repr__", jax_repr)
         patch_to(array.ArrayImpl, "__str__", jax_repr)

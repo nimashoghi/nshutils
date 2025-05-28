@@ -59,7 +59,7 @@ def _to_np(tensor: torch.Tensor) -> np.ndarray:
     return t_np
 
 
-@lovely_repr(dependencies=["torch"], fallback_repr=torch.Tensor.__repr__)
+@lovely_repr(dependencies=["torch"])
 def torch_repr(tensor: torch.Tensor) -> LovelyStats | None:
     return {
         # Basic attributes
@@ -87,6 +87,8 @@ def torch_monkey_patch():
     original_repr = torch.Tensor.__repr__
     original_str = torch.Tensor.__str__
     original_parameter_repr = torch.nn.Parameter.__repr__
+    torch_repr.set_fallback_repr(original_repr)
+
     try:
         patch_to(torch.Tensor, "__repr__", torch_repr)
         patch_to(torch.Tensor, "__str__", torch_repr)

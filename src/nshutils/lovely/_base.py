@@ -4,9 +4,16 @@ import functools
 import importlib.util
 import logging
 from collections.abc import Callable, Iterator
-from typing import Optional
+from typing import Generic, Optional, cast
 
-from typing_extensions import ParamSpec, TypeAliasType, TypeVar
+from typing_extensions import (
+    ParamSpec,
+    Protocol,
+    TypeAliasType,
+    TypeVar,
+    override,
+    runtime_checkable,
+)
 
 from ..util import ContextResource, resource_factory_contextmanager
 from .utils import LovelyStats, format_tensor_stats
@@ -21,11 +28,12 @@ LovelyStatsFn = TypeAliasType(
     Callable[[TArray], Optional[LovelyStats]],
     type_params=(TArray,),
 )
-LovelyReprFn = TypeAliasType(
-    "LovelyReprFn",
-    Callable[[TArray], str],
-    type_params=(TArray,),
-)
+
+
+@runtime_checkable
+class LovelyReprFn(Protocol[TArray]):
+    def set_fallback_repr(self, repr_fn: Callable[[TArray], str]) -> None: ...
+    def __call__(self, value: TArray, /) -> str: ...
 
 
 def _find_missing_deps(dependencies: list[str]):
@@ -40,52 +48,59 @@ def _find_missing_deps(dependencies: list[str]):
     return missing_deps
 
 
-def lovely_repr(dependencies: list[str], fallback_repr: Callable[[TArray], str]):
-    """
-    Decorator to create a lovely representation function for an array.
-
-    Args:
-        dependencies: List of dependencies to check before running the function.
-            If any dependency is not available, the function will not run.
-        fallback_repr: A function that takes an array and returns its fallback representation.
-    Returns:
-        A decorator function that takes a function and returns a lovely representation function.
-
-    Example:
-        @lovely_repr(dependencies=["torch"])
-        def my_array_stats(array):
-            return {...}
-    """
-
-    def decorator_fn(array_stats_fn: LovelyStatsFn[TArray]) -> LovelyReprFn[TArray]:
+class lovely_repr(Generic[TArray]):
+    @override
+    def __init__(
+        self,
+        dependencies: list[str],
+        fallback_repr: Callable[[TArray], str] | None = None,
+    ):
         """
         Decorator to create a lovely representation function for an array.
 
         Args:
-            array_stats_fn: A function that takes an array and returns its stats,
-                or `None` if the array is not supported.
-
+            dependencies: List of dependencies to check before running the function.
+                If any dependency is not available, the function will not run.
+            fallback_repr: A function that takes an array and returns its fallback representation.
         Returns:
-            A function that takes an array and returns its lovely representation.
-        """
+            A decorator function that takes a function and returns a lovely representation function.
 
+        Example:
+            @lovely_repr(dependencies=["torch"])
+            def my_array_stats(array):
+                return {...}
+        """
+        super().__init__()
+
+        if fallback_repr is None:
+            fallback_repr = repr
+
+        self._dependencies = dependencies
+        self._fallback_repr = fallback_repr
+
+    def set_fallback_repr(self, repr_fn: Callable[[TArray], str]) -> None:
+        self._repr_fn = repr_fn
+
+    def __call__(
+        self, array_stats_fn: LovelyStatsFn[TArray], /
+    ) -> LovelyReprFn[TArray]:
         @functools.wraps(array_stats_fn)
-        def wrapper(array: TArray) -> str:
-            if missing_deps := _find_missing_deps(dependencies):
+        def wrapper_fn(array: TArray) -> str:
+            if missing_deps := _find_missing_deps(self._dependencies):
                 log.warning(
                     f"Missing dependencies: {', '.join(missing_deps)}. "
                     "Skipping lovely representation."
                 )
-                return fallback_repr(array)
+                return self._fallback_repr(array)
 
             if (stats := array_stats_fn(array)) is None:
-                return fallback_repr(array)
+                return self._fallback_repr(array)
 
             return format_tensor_stats(stats)
 
+        wrapper = cast(LovelyReprFn[TArray], wrapper_fn)
+        wrapper.set_fallback_repr = self.set_fallback_repr
         return wrapper
-
-    return decorator_fn
 
 
 LovelyMonkeyPatchInputFn = TypeAliasType(
