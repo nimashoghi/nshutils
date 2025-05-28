@@ -32,6 +32,9 @@ LovelyStatsFn = TypeAliasType(
 
 @runtime_checkable
 class LovelyReprFn(Protocol[TArray]):
+    @property
+    def __name__(self) -> str: ...
+
     def set_fallback_repr(self, repr_fn: Callable[[TArray], str]) -> None: ...
     def __call__(self, value: TArray, /) -> str: ...
 
