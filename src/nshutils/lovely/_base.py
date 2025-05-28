@@ -4,6 +4,7 @@ import functools
 import importlib.util
 import logging
 from collections.abc import Callable, Iterator
+from typing import Optional
 
 from typing_extensions import ParamSpec, TypeAliasType, TypeVar
 
@@ -17,7 +18,7 @@ P = ParamSpec("P")
 
 LovelyStatsFn = TypeAliasType(
     "LovelyStatsFn",
-    Callable[[TArray], LovelyStats | None],
+    Callable[[TArray], Optional[LovelyStats]],
     type_params=(TArray,),
 )
 LovelyReprFn = TypeAliasType(
