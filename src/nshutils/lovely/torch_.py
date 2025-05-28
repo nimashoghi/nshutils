@@ -90,7 +90,8 @@ def torch_monkey_patch():
     try:
         patch_to(torch.Tensor, "__repr__", torch_repr)
         patch_to(torch.Tensor, "__str__", torch_repr)
-        del torch.nn.Parameter.__repr__
+        if hasattr(torch.nn.Parameter, "__repr__"):
+            delattr(torch.nn.Parameter, "__repr__")
 
         yield
     finally:
