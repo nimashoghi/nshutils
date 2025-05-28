@@ -92,8 +92,10 @@ def torch_monkey_patch():
     try:
         patch_to(torch.Tensor, "__repr__", torch_repr)
         patch_to(torch.Tensor, "__str__", torch_repr)
-        if hasattr(torch.nn.Parameter, "__repr__"):
+        try:
             delattr(torch.nn.Parameter, "__repr__")
+        except AttributeError:
+            pass
 
         yield
     finally:
