@@ -82,7 +82,7 @@ class lovely_repr(Generic[TArray]):
         self._fallback_repr = fallback_repr
 
     def set_fallback_repr(self, repr_fn: Callable[[TArray], str]) -> None:
-        self._repr_fn = repr_fn
+        self._fallback_repr = repr_fn
 
     def __call__(
         self, array_stats_fn: LovelyStatsFn[TArray], /
