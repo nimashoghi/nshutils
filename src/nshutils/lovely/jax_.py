@@ -53,9 +53,13 @@ def _device(array: jax.Array) -> str:
     return f"{device.platform}:{device.id}"
 
 
-@lovely_repr(dependencies=["jax"])
-def jax_repr(array: jax.Array) -> LovelyStats:
+@lovely_repr(dependencies=["jax"], fallback_repr=jax.Array.__repr__)
+def jax_repr(array: jax.Array) -> LovelyStats | None:
     import jax.numpy as jnp
+
+    # For dtypes like `object` or `str`, we let the fallback repr handle it
+    if not jnp.issubdtype(array.dtype, jnp.number):
+        return None
 
     return {
         # Basic attributes

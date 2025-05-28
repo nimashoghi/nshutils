@@ -51,8 +51,12 @@ def _dtype_str(array: np.ndarray) -> str:
     return dtype_base
 
 
-@lovely_repr(dependencies=["numpy"])
-def numpy_repr(array: np.ndarray) -> LovelyStats:
+@lovely_repr(dependencies=["numpy"], fallback_repr=np.array_repr)
+def numpy_repr(array: np.ndarray) -> LovelyStats | None:
+    # For dtypes like `object` or `str`, we let the fallback repr handle it
+    if not np.issubdtype(array.dtype, np.number):
+        return None
+
     return {
         # Basic attributes
         "shape": array.shape,

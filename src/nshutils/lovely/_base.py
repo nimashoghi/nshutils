@@ -17,7 +17,7 @@ P = ParamSpec("P")
 
 LovelyStatsFn = TypeAliasType(
     "LovelyStatsFn",
-    Callable[[TArray], LovelyStats],
+    Callable[[TArray], LovelyStats | None],
     type_params=(TArray,),
 )
 LovelyReprFn = TypeAliasType(
@@ -39,14 +39,14 @@ def _find_missing_deps(dependencies: list[str]):
     return missing_deps
 
 
-def lovely_repr(dependencies: list[str]):
+def lovely_repr(dependencies: list[str], fallback_repr: Callable[[TArray], str]):
     """
     Decorator to create a lovely representation function for an array.
 
     Args:
         dependencies: List of dependencies to check before running the function.
             If any dependency is not available, the function will not run.
-
+        fallback_repr: A function that takes an array and returns its fallback representation.
     Returns:
         A decorator function that takes a function and returns a lovely representation function.
 
@@ -61,7 +61,8 @@ def lovely_repr(dependencies: list[str]):
         Decorator to create a lovely representation function for an array.
 
         Args:
-            array_stats_fn: A function that takes an array and returns its stats.
+            array_stats_fn: A function that takes an array and returns its stats,
+                or `None` if the array is not supported.
 
         Returns:
             A function that takes an array and returns its lovely representation.
@@ -74,9 +75,11 @@ def lovely_repr(dependencies: list[str]):
                     f"Missing dependencies: {', '.join(missing_deps)}. "
                     "Skipping lovely representation."
                 )
-                return repr(array)
+                return fallback_repr(array)
 
-            stats = array_stats_fn(array)
+            if (stats := array_stats_fn(array)) is None:
+                return fallback_repr(array)
+
             return format_tensor_stats(stats)
 
         return wrapper

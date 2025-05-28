@@ -59,8 +59,8 @@ def _to_np(tensor: torch.Tensor) -> np.ndarray:
     return t_np
 
 
-@lovely_repr(dependencies=["torch"])
-def torch_repr(tensor: torch.Tensor) -> LovelyStats:
+@lovely_repr(dependencies=["torch"], fallback_repr=torch.Tensor.__repr__)
+def torch_repr(tensor: torch.Tensor) -> LovelyStats | None:
     return {
         # Basic attributes
         "shape": tensor.shape,
