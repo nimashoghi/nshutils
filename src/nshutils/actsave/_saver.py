@@ -43,7 +43,7 @@ ValueOrLambda = TypeAliasType("ValueOrLambda", Union[Value, Callable[..., Value]
 
 
 def _torch_is_scripting() -> bool:
-    if _torch_installed:
+    if not _torch_installed:
         return False
 
     return torch.jit.is_scripting()
