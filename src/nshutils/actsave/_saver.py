@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from functools import wraps
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Generic, TypeAlias, cast, overload
+from typing import TYPE_CHECKING, Generic, Literal, cast, overload
 
 import numpy as np
 from typing_extensions import Never, ParamSpec, TypeAliasType, TypeVar, override
@@ -22,15 +22,17 @@ if not TYPE_CHECKING:
         import torch  # type: ignore
 
         Tensor = torch.Tensor
+        _torch_installed = True
     except ImportError:
         torch = None
+        _torch_installed = False
 
         Tensor = Never
 else:
     import torch  # type: ignore
 
     Tensor = torch.Tensor
-
+    _torch_installed: Literal[True] = True
 
 log = getLogger(__name__)
 
@@ -41,7 +43,7 @@ ValueOrLambda = TypeAliasType("ValueOrLambda", Value | Callable[..., Value])
 
 
 def _torch_is_scripting() -> bool:
-    if torch is None:
+    if _torch_installed:
         return False
 
     return torch.jit.is_scripting()
@@ -56,7 +58,7 @@ def _to_numpy(activation: Value) -> np.ndarray:
         return np.array(activation)
     elif isinstance(activation, np.ndarray):
         return activation
-    elif isinstance(activation, Tensor):
+    elif _torch_installed and isinstance(activation, Tensor):
         activation_ = activation.detach()
         if activation_.is_floating_point():
             # NOTE: We need to convert to float32 because [b]float16 is not supported by numpy
