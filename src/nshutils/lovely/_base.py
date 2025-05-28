@@ -33,6 +33,12 @@ LovelyStatsFn = TypeAliasType(
 @runtime_checkable
 class LovelyReprFn(Protocol[TArray]):
     @property
+    def __lovely_repr_instance__(self) -> lovely_repr[TArray]: ...
+
+    @__lovely_repr_instance__.setter
+    def __lovely_repr_instance__(self, value: lovely_repr[TArray]) -> None: ...
+
+    @property
     def __name__(self) -> str: ...
 
     def set_fallback_repr(self, repr_fn: Callable[[TArray], str]) -> None: ...
@@ -102,6 +108,7 @@ class lovely_repr(Generic[TArray]):
             return format_tensor_stats(stats)
 
         wrapper = cast(LovelyReprFn[TArray], wrapper_fn)
+        wrapper.__lovely_repr_instance__ = self
         wrapper.set_fallback_repr = self.set_fallback_repr
         return wrapper
 
