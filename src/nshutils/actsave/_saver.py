@@ -241,6 +241,17 @@ class _Saver:
 class ActSaveProvider:
     _saver: _Saver | None = None
     _prefixes: list[str] = []
+    _disable_count: int = 0
+
+    @property
+    def is_initialized(self) -> bool:
+        """Returns True if ActSave.enable() has been called and not subsequently disabled."""
+        return self._saver is not None
+
+    @property
+    def is_enabled(self) -> bool:
+        """Returns True if ActSave is currently active and will save activations."""
+        return self.is_initialized and self._disable_count == 0
 
     def enable(self, save_dir: Path | None = None):
         """
@@ -294,6 +305,34 @@ class ActSaveProvider:
 
         self._saver = None
         self._prefixes = []
+        self._disable_count = 0
+
+    @contextlib.contextmanager
+    def disabled(self, condition: bool | Callable[[], bool] = True):
+        """
+        Context manager to temporarily disable activation saving.
+
+        Args:
+            condition (bool | Callable[[], bool], optional):
+                If True or a callable returning True, saving is disabled within this context.
+                Defaults to True.
+        """
+        if _torch_is_scripting():
+            yield
+            return
+
+        should_disable = condition() if callable(condition) else condition
+        if should_disable:
+            self._disable_count += 1
+
+        try:
+            yield
+        finally:
+            if should_disable:
+                self._disable_count -= 1
+                if self._disable_count < 0:  # Should not happen
+                    log.warning("ActSave disable count went below zero.")
+                    self._disable_count = 0
 
     @contextlib.contextmanager
     def context(self, label: str):
@@ -307,7 +346,7 @@ class ActSaveProvider:
             yield
             return
 
-        if self._saver is None:
+        if not self.is_enabled:
             yield
             return
 
@@ -368,8 +407,11 @@ class ActSaveProvider:
         if _torch_is_scripting():
             return
 
-        if self._saver is None:
+        if not self.is_enabled:
             return
+
+        # Ensure _saver is not None, which is guaranteed by is_enabled but mypy needs help
+        assert self._saver is not None
 
         if acts is not None and callable(acts):
             acts = acts()
