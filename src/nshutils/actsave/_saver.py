@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import fnmatch
+import os
 import tempfile
 import weakref
 from collections.abc import Callable, Mapping
@@ -266,7 +267,11 @@ class ActSaveProvider:
 
         if save_dir is None:
             save_dir = Path(tempfile.gettempdir()) / f"actsave-{uuid7str()}"
-            log.critical(f"No save_dir specified, using {save_dir=}")
+            log.warning(
+                f"ActSave: Using temporary directory {save_dir} for activations."
+            )
+        else:
+            log.info(f"ActSave enabled. Saving to {save_dir}")
         self._saver = _Saver(save_dir, lambda: self._prefixes)
 
     def disable(self):
@@ -306,6 +311,18 @@ class ActSaveProvider:
         self._saver = None
         self._prefixes = []
         self._disable_count = 0
+
+        # Check for environment variable `ACTSAVE` to automatically enable saving.
+        # If set to "1" or "true" (case-insensitive), activations are saved to a temporary directory.
+        # If set to a path, activations are saved to that path.
+        if env_var := os.environ.get("ACTSAVE"):
+            log.info(
+                f"`ACTSAVE={env_var}` detected, attempting to auto-enable activation saving."
+            )
+            if env_var.lower() in ("1", "true"):
+                self.enable()
+            else:
+                self.enable(Path(env_var))
 
     @contextlib.contextmanager
     def disabled(self, condition: bool | Callable[[], bool] = True):
