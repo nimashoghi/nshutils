@@ -105,14 +105,41 @@ class ActLoad:
         path, _ = max(all_versions, key=lambda p: p[1])
         return cls(path)
 
-    def __init__(self, dir: Path):
+    def __init__(
+        self,
+        dir: Path | None = None,
+        *,
+        _base_activations: dict[str, LoadedActivation] | None = None,
+        _prefix_chain: list[str] | None = None,
+    ):
+        """Initialize ActLoad from a directory or from filtered activations.
+
+        Args:
+            dir: Path to the activation directory. Required for root ActLoad instances.
+            _base_activations: Pre-filtered activations dict. Used internally for prefix filtering.
+            _prefix_chain: Chain of prefixes that have been applied. Used for repr.
+        """
         self._dir = dir
+        self._base_activations = _base_activations
+        self._prefix_chain = _prefix_chain or []
 
     def activation(self, name: str):
-        return LoadedActivation(self._dir, name)
+        if self._dir is None:
+            raise ValueError(
+                "Cannot create activation from filtered ActLoad without base directory"
+            )
+        # For filtered instances, we need to reconstruct the full name
+        full_name = "".join(self._prefix_chain) + name
+        return LoadedActivation(self._dir, full_name)
 
     @cached_property
     def activations(self):
+        if self._base_activations is not None:
+            return self._base_activations
+
+        if self._dir is None:
+            raise ValueError("ActLoad requires either dir or _base_activations")
+
         dirs = list(self._dir.iterdir())
         # Sort the dirs by the last modified time
         dirs.sort(key=lambda p: p.stat().st_mtime)
@@ -137,10 +164,50 @@ class ActLoad:
             }
         )
         acts_str = acts_str.replace("'<", "<").replace(">'", ">")
-        return f"ActLoad({acts_str})"
+
+        if self._prefix_chain:
+            prefix_str = "".join(self._prefix_chain)
+            return f"ActLoad(prefix='{prefix_str}', {acts_str})"
+        else:
+            return f"ActLoad({acts_str})"
 
     def get(self, name: str, /, default: T) -> LoadedActivation | T:
         return self.activations.get(name, default)
+
+    def filter_by_prefix(self, prefix: str) -> ActLoad:
+        """Create a filtered view of activations that match the given prefix.
+
+        Args:
+            prefix: The prefix to filter by. Only activations whose names start
+                   with this prefix will be included in the filtered view.
+
+        Returns:
+            A new ActLoad instance that provides access to matching activations
+            with the prefix stripped from their keys. Can be chained multiple times.
+
+        Example:
+            >>> loader = ActLoad(some_dir)
+            >>> # If loader has keys "my.activation.first", "my.activation.second", "other.key"
+            >>> filtered = loader.filter_by_prefix("my.activation.")
+            >>> filtered["first"]  # Accesses "my.activation.first"
+            >>> filtered["second"]  # Accesses "my.activation.second"
+            >>> # Can be chained:
+            >>> double_filtered = loader.filter_by_prefix("my.").filter_by_prefix("activation.")
+            >>> double_filtered["first"]  # Also accesses "my.activation.first"
+        """
+        filtered_activations = {}
+        for name, activation in self.activations.items():
+            if name.startswith(prefix):
+                # Strip the prefix from the key
+                stripped_name = name[len(prefix) :]
+                filtered_activations[stripped_name] = activation
+
+        new_prefix_chain = self._prefix_chain + [prefix]
+        return ActLoad(
+            _base_activations=filtered_activations,
+            _prefix_chain=new_prefix_chain,
+            dir=self._dir,
+        )
 
 
 ActivationLoader = ActLoad
