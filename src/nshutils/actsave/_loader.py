@@ -155,6 +155,9 @@ class ActLoad:
     def __len__(self):
         return len(self.activations)
 
+    def _ipython_key_completions_(self):
+        return list(self.activations.keys())
+
     @override
     def __repr__(self):
         acts_str = pprint.pformat(
