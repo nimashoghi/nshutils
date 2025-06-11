@@ -28,6 +28,8 @@ basedpyright = "*"
 ruff = "*"
 ipykernel = "*"
 ipywidgets = "*"
+pytest = "*"
+pytest-cov = "*"
 
 [build-system]
 requires = ["poetry-core"]
@@ -47,3 +49,9 @@ ignore = ["F722", "F821", "E731", "E741"]
 
 [tool.ruff.lint.isort]
 required-imports = ["from __future__ import annotations"]
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "--cov=nshutils --cov-report=term-missing"
