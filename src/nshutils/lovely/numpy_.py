@@ -3,8 +3,9 @@ from __future__ import annotations
 import logging
 
 import numpy as np
+from typing_extensions import override
 
-from ._base import lovely_repr, monkey_patch_contextmanager
+from ._base import lovely_patch, lovely_repr
 from .utils import LovelyStats, array_stats
 
 
@@ -74,42 +75,41 @@ def numpy_repr(array: np.ndarray) -> LovelyStats | None:
 numpy_repr.set_fallback_repr(np.array_repr)
 
 
-# If numpy 2.0, use the new API override_repr.
-if _np_ge_2():
+class numpy_monkey_patch(lovely_patch):
+    @override
+    def dependencies(self) -> list[str]:
+        return ["numpy"]
 
-    @monkey_patch_contextmanager(dependencies=["numpy"])
-    def numpy_monkey_patch():
-        try:
+    @override
+    def patch(self):
+        if _np_ge_2():
+            self.original_options = np.get_printoptions()
             np.set_printoptions(override_repr=numpy_repr)
             logging.info(
                 f"Numpy monkey patching: using {numpy_repr.__name__} for numpy arrays. "
                 f"{np.get_printoptions()=}"
             )
-            yield
-        finally:
-            np.set_printoptions(override_repr=None)
-            logging.info(
-                f"Numpy unmonkey patching: using {numpy_repr.__name__} for numpy arrays. "
-                f"{np.get_printoptions()=}"
-            )
-
-else:
-
-    @monkey_patch_contextmanager(dependencies=["numpy"])
-    def numpy_monkey_patch():
-        try:
+        else:
+            # For legacy numpy, `set_string_function(None)` reverts to the default,
+            # so no state needs to be saved.
             np.set_string_function(numpy_repr, True)  # pyright: ignore[reportAttributeAccessIssue]
             np.set_string_function(numpy_repr, False)  # pyright: ignore[reportAttributeAccessIssue]
-
             logging.info(
                 f"Numpy monkey patching: using {numpy_repr.__name__} for numpy arrays. "
                 f"{np.get_printoptions()=}"
             )
-            yield
-        finally:
+
+    @override
+    def unpatch(self):
+        if _np_ge_2():
+            np.set_printoptions(**self.original_options)
+            logging.info(
+                f"Numpy unmonkey patching: using {numpy_repr.__name__} for numpy arrays. "
+                f"{np.get_printoptions()=}"
+            )
+        else:
             np.set_string_function(None, True)  # pyright: ignore[reportAttributeAccessIssue]
             np.set_string_function(None, False)  # pyright: ignore[reportAttributeAccessIssue]
-
             logging.info(
                 f"Numpy unmonkey patching: using {numpy_repr.__name__} for numpy arrays. "
                 f"{np.get_printoptions()=}"

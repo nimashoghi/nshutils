@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import contextlib
 import functools
 import importlib.util
 import logging
-from collections.abc import Callable, Iterator
-from typing import Generic, Optional, cast
+from abc import ABC, abstractmethod
+from collections.abc import Callable
+from typing import Any, Generic, Optional, cast
 
 from typing_extensions import (
     ParamSpec,
@@ -15,7 +17,6 @@ from typing_extensions import (
     runtime_checkable,
 )
 
-from ..util import ContextResource, resource_factory_contextmanager
 from .utils import LovelyStats, format_tensor_stats
 
 log = logging.getLogger(__name__)
@@ -113,72 +114,47 @@ class lovely_repr(Generic[TArray]):
         return wrapper
 
 
-LovelyMonkeyPatchInputFn = TypeAliasType(
-    "LovelyMonkeyPatchInputFn",
-    Callable[P, Iterator[None]],
-    type_params=(P,),
-)
-LovelyMonkeyPatchFn = TypeAliasType(
-    "LovelyMonkeyPatchFn",
-    Callable[P, ContextResource[None]],
-    type_params=(P,),
-)
+class lovely_patch(contextlib.AbstractContextManager["lovely_patch"], ABC):
+    def __init__(self):
+        self._patched = False
+        self.__enter__()
 
+    def dependencies(self) -> list[str]:
+        """Subclasses can override this to specify the dependencies of the patch."""
+        return []
 
-def _nullcontext_generator():
-    """A generator that does nothing."""
-    yield
+    @abstractmethod
+    def patch(self):
+        """Subclasses must implement this."""
 
+    @abstractmethod
+    def unpatch(self):
+        """Subclasses must implement this."""
 
-def _wrap_monkey_patch_fn(
-    monkey_patch_fn: LovelyMonkeyPatchInputFn[P],
-    dependencies: list[str],
-) -> LovelyMonkeyPatchInputFn[P]:
-    @functools.wraps(monkey_patch_fn)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> Iterator[None]:
-        if missing_deps := _find_missing_deps(dependencies):
+    @override
+    def __enter__(self):
+        if self._patched:
+            return self
+
+        if missing_deps := _find_missing_deps(self.dependencies()):
             log.warning(
                 f"Missing dependencies: {', '.join(missing_deps)}. "
                 "Skipping monkey patch."
             )
-            return _nullcontext_generator()
+            return self
 
-        return monkey_patch_fn(*args, **kwargs)
+        self.patch()
+        self._patched = True
+        return self
 
-    return wrapper
+    @override
+    def __exit__(self, *exc_info):
+        if not self._patched:
+            return
 
+        self.unpatch()
+        self._patched = False
 
-def monkey_patch_contextmanager(dependencies: list[str]):
-    """
-    Decorator to create a monkey patch function for an array.
-
-    Args:
-        dependencies: List of dependencies to check before running the function.
-            If any dependency is not available, the function will not run.
-
-    Returns:
-        A decorator function that takes a function and returns a monkey patch function.
-
-    Example:
-        @monkey_patch_contextmanager(dependencies=["torch"])
-        def my_array_monkey_patch():
-            ...
-    """
-
-    def decorator_fn(
-        monkey_patch_fn: LovelyMonkeyPatchInputFn[P],
-    ) -> LovelyMonkeyPatchFn[P]:
-        """
-        Decorator to create a monkey patch function for an array.
-
-        Args:
-            monkey_patch_fn: A function that applies the monkey patch.
-
-        Returns:
-            A function that applies the monkey patch.
-        """
-
-        wrapped_fn = _wrap_monkey_patch_fn(monkey_patch_fn, dependencies)
-        return resource_factory_contextmanager(wrapped_fn)
-
-    return decorator_fn
+    def close(self):
+        """Explicitly clean up the resource."""
+        self.__exit__(None, None, None)

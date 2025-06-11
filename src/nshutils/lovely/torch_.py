@@ -3,8 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
+from typing_extensions import override
 
-from ._base import lovely_repr, monkey_patch_contextmanager
+from ._base import lovely_patch, lovely_repr
 from .utils import LovelyStats, array_stats, patch_to
 
 if TYPE_CHECKING:
@@ -80,16 +81,20 @@ def torch_repr(tensor: torch.Tensor) -> LovelyStats | None:
     }
 
 
-@monkey_patch_contextmanager(dependencies=["torch"])
-def torch_monkey_patch():
-    import torch
+class torch_monkey_patch(lovely_patch):
+    @override
+    def dependencies(self) -> list[str]:
+        return ["torch"]
 
-    original_repr = torch.Tensor.__repr__
-    original_str = torch.Tensor.__str__
-    original_parameter_repr = torch.nn.Parameter.__repr__
-    torch_repr.set_fallback_repr(original_repr)
+    @override
+    def patch(self):
+        import torch
 
-    try:
+        self.original_repr = torch.Tensor.__repr__
+        self.original_str = torch.Tensor.__str__
+        self.original_parameter_repr = torch.nn.Parameter.__repr__
+        torch_repr.set_fallback_repr(self.original_repr)
+
         patch_to(torch.Tensor, "__repr__", torch_repr)
         patch_to(torch.Tensor, "__str__", torch_repr)
         try:
@@ -97,8 +102,10 @@ def torch_monkey_patch():
         except AttributeError:
             pass
 
-        yield
-    finally:
-        patch_to(torch.Tensor, "__repr__", original_repr)
-        patch_to(torch.Tensor, "__str__", original_str)
-        patch_to(torch.nn.Parameter, "__repr__", original_parameter_repr)
+    @override
+    def unpatch(self):
+        import torch
+
+        patch_to(torch.Tensor, "__repr__", self.original_repr)
+        patch_to(torch.Tensor, "__str__", self.original_str)
+        patch_to(torch.nn.Parameter, "__repr__", self.original_parameter_repr)

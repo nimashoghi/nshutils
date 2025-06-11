@@ -7,6 +7,7 @@ from .collections import apply_to_collection as apply_to_collection
 from .display import display as display
 from .logging import init_python_logging as init_python_logging
 from .logging import setup_logging as setup_logging
+from .lovely import lovely_monkey_patch as lovely_monkey_patch
 from .snoop import snoop as snoop
 from .typecheck import tassert as tassert
 from .typecheck import typecheck_modules as typecheck_modules

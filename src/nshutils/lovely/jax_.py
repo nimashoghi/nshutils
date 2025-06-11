@@ -3,8 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
+from typing_extensions import override
 
-from ._base import lovely_repr, monkey_patch_contextmanager
+from ._base import lovely_patch, lovely_repr
 from .utils import LovelyStats, array_stats, patch_to
 
 if TYPE_CHECKING:
@@ -77,18 +78,25 @@ def jax_repr(array: jax.Array) -> LovelyStats | None:
     }
 
 
-@monkey_patch_contextmanager(dependencies=["jax"])
-def jax_monkey_patch():
-    from jax._src import array
+class jax_monkey_patch(lovely_patch):
+    @override
+    def dependencies(self) -> list[str]:
+        return ["jax"]
 
-    prev_repr = array.ArrayImpl.__repr__
-    prev_str = array.ArrayImpl.__str__
-    jax_repr.set_fallback_repr(prev_repr)
-    try:
+    @override
+    def patch(self):
+        from jax._src import array
+
+        self.prev_repr = array.ArrayImpl.__repr__
+        self.prev_str = array.ArrayImpl.__str__
+        jax_repr.set_fallback_repr(self.prev_repr)
+
         patch_to(array.ArrayImpl, "__repr__", jax_repr)
         patch_to(array.ArrayImpl, "__str__", jax_repr)
 
-        yield
-    finally:
-        patch_to(array.ArrayImpl, "__repr__", prev_repr)
-        patch_to(array.ArrayImpl, "__str__", prev_str)
+    @override
+    def unpatch(self):
+        from jax._src import array
+
+        patch_to(array.ArrayImpl, "__repr__", self.prev_repr)
+        patch_to(array.ArrayImpl, "__str__", self.prev_str)

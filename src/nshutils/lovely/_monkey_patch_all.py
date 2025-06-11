@@ -5,9 +5,9 @@ import importlib.util
 import logging
 from typing import Literal
 
-from typing_extensions import TypeAliasType, assert_never
+from typing_extensions import TypeAliasType, assert_never, override
 
-from ..util import resource_factory_contextmanager
+from ._base import lovely_patch
 
 Library = TypeAliasType("Library", Literal["numpy", "torch", "jax"])
 
@@ -28,40 +28,48 @@ def _find_deps() -> list[Library]:
     return deps
 
 
-@resource_factory_contextmanager
-def monkey_patch(libraries: list[Library] | Literal["auto"] = "auto"):
-    if libraries == "auto":
-        libraries = _find_deps()
+class monkey_patch(lovely_patch):
+    def __init__(self, libraries: list[Library] | Literal["auto"] = "auto"):
+        self.libraries = libraries
+        if self.libraries == "auto":
+            self.libraries = _find_deps()
 
-    if not libraries:
-        raise ValueError(
-            "No libraries found for monkey patching. "
-            "Please install numpy, torch, or jax."
-        )
+        if not self.libraries:
+            raise ValueError(
+                "No libraries found for monkey patching. "
+                "Please install numpy, torch, or jax."
+            )
 
-    with contextlib.ExitStack() as stack:
-        for library in libraries:
+        self.stack = contextlib.ExitStack()
+        super().__init__()
+
+    @override
+    def patch(self):
+        for library in self.libraries:
             if library == "torch":
                 from .torch_ import torch_monkey_patch
 
-                stack.enter_context(torch_monkey_patch())
+                self.stack.enter_context(torch_monkey_patch())
             elif library == "jax":
                 from .jax_ import jax_monkey_patch
 
-                stack.enter_context(jax_monkey_patch())
+                self.stack.enter_context(jax_monkey_patch())
             elif library == "numpy":
                 from .numpy_ import numpy_monkey_patch
 
-                stack.enter_context(numpy_monkey_patch())
+                self.stack.enter_context(numpy_monkey_patch())
             else:
-                assert_never(library)
+                assert_never(library)  # type: ignore
 
         log.info(
-            f"Monkey patched libraries: {', '.join(libraries)}. "
+            f"Monkey patched libraries: {', '.join(self.libraries)}. "
             "You can now use the lovely functions with these libraries."
         )
-        yield
+
+    @override
+    def unpatch(self):
+        self.stack.close()
         log.info(
-            f"Unmonkey patched libraries: {', '.join(libraries)}. "
+            f"Unmonkey patched libraries: {', '.join(self.libraries)}. "
             "You can now use the lovely functions with these libraries."
         )

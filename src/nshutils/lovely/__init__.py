@@ -8,3 +8,5 @@ from .numpy_ import numpy_monkey_patch as numpy_monkey_patch
 from .numpy_ import numpy_repr as numpy_repr
 from .torch_ import torch_monkey_patch as torch_monkey_patch
 from .torch_ import torch_repr as torch_repr
+
+lovely_monkey_patch = monkey_patch
