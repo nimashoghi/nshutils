@@ -126,7 +126,8 @@ class Activation:
         if activation is None:
             return None
 
-        activation = apply_to_collection(activation, Tensor, _to_numpy)
+        if _torch_installed:
+            activation = apply_to_collection(activation, Tensor, _to_numpy)
         activation = _to_numpy(activation)
 
         # Set the transformed value
