@@ -38,18 +38,18 @@ from jaxtyping._storage import get_shape_memo, shape_str
 from typing_extensions import TypeVar
 
 try:
-    import torch  # type: ignore
+    import torch  # pyright: ignore[reportMissingImports]
 except ImportError:
     torch = None
 
 try:
-    import np  # type: ignore
+    import np  # pyright: ignore[reportMissingImports]
 except ImportError:
     np = None
 
 
 try:
-    import jax  # type: ignore
+    import jax  # pyright: ignore[reportMissingImports]
 except ImportError:
     jax = None
 
@@ -124,21 +124,21 @@ def _make_error_str(input: Any, t: Any) -> str:
         error_components.append(t.__instancecheck_str__(input))
     if torch is not None and torch.is_tensor(input):
         try:
-            from lovely_tensors import lovely  # type: ignore
+            from lovely_tensors import lovely  # pyright: ignore[reportMissingImports]
 
             error_components.append(repr(lovely(input)))
         except BaseException:
             error_components.append(repr(input.shape))
     elif jax is not None and isinstance(input, jax.Array):
         try:
-            from lovely_jax import lovely  # type: ignore
+            from lovely_jax import lovely  # pyright: ignore[reportMissingImports]
 
             error_components.append(repr(lovely(input)))
         except BaseException:
             error_components.append(repr(input.shape))
     elif np is not None and isinstance(input, np.ndarray):
         try:
-            from lovely_numpy import lovely  # type: ignore
+            from lovely_numpy import lovely  # pyright: ignore[reportMissingImports]
 
             error_components.append(repr(lovely(input)))
         except BaseException:

@@ -9,11 +9,11 @@ from ._base import lovely_patch, lovely_repr
 from .utils import LovelyStats, array_stats, patch_to
 
 if TYPE_CHECKING:
-    import torch
+    import torch  # pyright: ignore[reportMissingImports]
 
 
 def _type_name(tensor: torch.Tensor):
-    import torch
+    import torch  # pyright: ignore[reportMissingImports]
 
     return (
         "tensor"
@@ -45,7 +45,7 @@ def _dtype_str(tensor: torch.Tensor) -> str:
 
 
 def _to_np(tensor: torch.Tensor) -> np.ndarray:
-    import torch
+    import torch  # pyright: ignore[reportMissingImports]
 
     # Get tensor data as CPU NumPy array for analysis
     t_cpu = tensor.detach().cpu()
@@ -88,7 +88,7 @@ class torch_monkey_patch(lovely_patch):
 
     @override
     def patch(self):
-        import torch
+        import torch  # pyright: ignore[reportMissingImports]
 
         self.original_repr = torch.Tensor.__repr__
         self.original_str = torch.Tensor.__str__
@@ -104,7 +104,7 @@ class torch_monkey_patch(lovely_patch):
 
     @override
     def unpatch(self):
-        import torch
+        import torch  # pyright: ignore[reportMissingImports]
 
         patch_to(torch.Tensor, "__repr__", self.original_repr)
         patch_to(torch.Tensor, "__str__", self.original_str)

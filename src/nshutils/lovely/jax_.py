@@ -9,7 +9,7 @@ from ._base import lovely_patch, lovely_repr
 from .utils import LovelyStats, array_stats, patch_to
 
 if TYPE_CHECKING:
-    import jax
+    import jax  # pyright: ignore[reportMissingImports]
 
 
 def _type_name(array: jax.Array):
@@ -42,7 +42,7 @@ def _dtype_str(array: jax.Array) -> str:
 
 
 def _device(array: jax.Array) -> str:
-    from jaxlib.xla_extension import Device
+    from jaxlib.xla_extension import Device  # pyright: ignore[reportMissingImports]
 
     if callable(device := array.device):
         device = device()
@@ -56,7 +56,7 @@ def _device(array: jax.Array) -> str:
 
 @lovely_repr(dependencies=["jax"])
 def jax_repr(array: jax.Array) -> LovelyStats | None:
-    import jax.numpy as jnp
+    import jax.numpy as jnp  # pyright: ignore[reportMissingImports]
 
     # For dtypes like `object` or `str`, we let the fallback repr handle it
     if not jnp.issubdtype(array.dtype, jnp.number):
@@ -85,7 +85,7 @@ class jax_monkey_patch(lovely_patch):
 
     @override
     def patch(self):
-        from jax._src import array
+        from jax._src import array  # pyright: ignore[reportMissingImports]
 
         self.prev_repr = array.ArrayImpl.__repr__
         self.prev_str = array.ArrayImpl.__str__
@@ -96,7 +96,7 @@ class jax_monkey_patch(lovely_patch):
 
     @override
     def unpatch(self):
-        from jax._src import array
+        from jax._src import array  # pyright: ignore[reportMissingImports]
 
         patch_to(array.ArrayImpl, "__repr__", self.prev_repr)
         patch_to(array.ArrayImpl, "__str__", self.prev_str)

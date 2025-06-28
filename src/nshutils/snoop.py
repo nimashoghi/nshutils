@@ -20,16 +20,16 @@ try:
     import warnings
     from contextlib import nullcontext
 
-    import pysnooper  # type: ignore
-    import pysnooper.utils  # type: ignore
+    import pysnooper  # pyright: ignore[reportMissingImports]
+    import pysnooper.utils  # pyright: ignore[reportMissingImports]
 
     try:
-        import torch  # type: ignore
+        import torch  # pyright: ignore[reportMissingImports]
     except ImportError:
         torch = None
 
     try:
-        import numpy  # type: ignore
+        import numpy  # pyright: ignore[reportMissingImports]
     except ImportError:
         numpy = None
 

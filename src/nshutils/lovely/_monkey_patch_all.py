@@ -30,9 +30,10 @@ def _find_deps() -> list[Library]:
 
 class monkey_patch(lovely_patch):
     def __init__(self, libraries: list[Library] | Literal["auto"] = "auto"):
-        self.libraries = libraries
-        if self.libraries == "auto":
+        if libraries == "auto":
             self.libraries = _find_deps()
+        else:
+            self.libraries = libraries
 
         if not self.libraries:
             raise ValueError(
@@ -59,7 +60,7 @@ class monkey_patch(lovely_patch):
 
                 self.stack.enter_context(numpy_monkey_patch())
             else:
-                assert_never(library)  # type: ignore
+                assert_never(library)
 
         log.info(
             f"Monkey patched libraries: {', '.join(self.libraries)}. "
