@@ -124,23 +124,23 @@ def _make_error_str(input: Any, t: Any) -> str:
         error_components.append(t.__instancecheck_str__(input))
     if torch is not None and torch.is_tensor(input):
         try:
-            from lovely_tensors import lovely  # pyright: ignore[reportMissingImports]
+            from .lovely import torch_repr
 
-            error_components.append(repr(lovely(input)))
+            error_components.append(torch_repr(input))
         except BaseException:
             error_components.append(repr(input.shape))
     elif jax is not None and isinstance(input, jax.Array):
         try:
-            from lovely_jax import lovely  # pyright: ignore[reportMissingImports]
+            from .lovely import jax_repr
 
-            error_components.append(repr(lovely(input)))
+            error_components.append(jax_repr(input))
         except BaseException:
             error_components.append(repr(input.shape))
     elif np is not None and isinstance(input, np.ndarray):
         try:
-            from lovely_numpy import lovely  # pyright: ignore[reportMissingImports]
+            from .lovely import numpy_repr
 
-            error_components.append(repr(lovely(input)))
+            error_components.append(numpy_repr(input))
         except BaseException:
             error_components.append(repr(input.shape))
     error_components.append(shape_str(get_shape_memo()))
