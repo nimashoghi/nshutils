@@ -33,6 +33,11 @@ try:
     except ImportError:
         numpy = None
 
+    try:
+        import jax  # pyright: ignore[reportMissingImports]
+    except ImportError:
+        jax = None
+
     FLOATING_POINTS = set()
     for i in ["float", "double", "half", "complex128", "complex32", "complex64"]:
         # older version of PyTorch do not have complex dtypes
@@ -48,17 +53,25 @@ try:
 
     def default_format(x):
         try:
-            import lovely_tensors as lt  # type: ignore
+            from .lovely import torch_repr
 
-            return str(lt.lovely(x))
+            return torch_repr(x)
         except BaseException:
             return str(x.shape)
 
     def default_numpy_format(x):
         try:
-            import lovely_numpy as lo  # type: ignore
+            from .lovely import numpy_repr
 
-            return str(lo.lovely(x))
+            return numpy_repr(x)
+        except BaseException:
+            return str(x.shape)
+
+    def default_jax_format(x):
+        try:
+            from .lovely import jax_repr
+
+            return jax_repr(x)
         except BaseException:
             return str(x.shape)
 
@@ -68,6 +81,7 @@ try:
             *args,
             tensor_format=default_format,
             numpy_format=default_numpy_format,
+            jax_format=default_jax_format,
             **kwargs,
         ):
             self.orig_custom_repr = (
@@ -78,6 +92,7 @@ try:
             super(TorchSnooper, self).__init__(*args, **kwargs)
             self.tensor_format = tensor_format
             self.numpy_format = numpy_format
+            self.jax_format = jax_format
 
         @staticmethod
         def is_return_types(x):
@@ -176,6 +191,8 @@ try:
                 return self.tensor_format(x)
             if numpy is not None and isinstance(x, numpy.ndarray):
                 return self.numpy_format(x)
+            if jax is not None and isinstance(x, jax.Array):
+                return self.jax_format(x)
             if self.is_return_types(x):
                 return self.return_types_repr(x)
             if orig_repr_func is not repr:
