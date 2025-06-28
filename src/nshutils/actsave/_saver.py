@@ -20,7 +20,7 @@ from ..collections import apply_to_collection
 
 if not TYPE_CHECKING:
     try:
-        import torch  # type: ignore
+        import torch  # pyright: ignore[reportMissingImports]
 
         Tensor = torch.Tensor
         _torch_installed = True
@@ -30,9 +30,9 @@ if not TYPE_CHECKING:
 
         Tensor = Never
 else:
-    import torch  # type: ignore
+    import torch  # pyright: ignore[reportMissingImports]
 
-    Tensor = torch.Tensor
+    Tensor = TypeAliasType("Tensor", torch.Tensor)
     _torch_installed: Literal[True] = True
 
 log = getLogger(__name__)
@@ -60,7 +60,7 @@ def _to_numpy(activation: Value) -> np.ndarray:
         return np.array(activation)
     elif isinstance(activation, np.ndarray):
         return activation
-    elif _torch_installed and isinstance(activation, Tensor):
+    elif _torch_installed and isinstance(activation, torch.Tensor):
         activation_ = activation.detach()
         if activation_.is_floating_point():
             # NOTE: We need to convert to float32 because [b]float16 is not supported by numpy
