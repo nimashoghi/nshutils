@@ -3,10 +3,11 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from types import FrameType as _FrameType
-from typing import Any
+from typing import Any, Union
 
+from beartype import beartype
 from jaxtyping import BFloat16 as BFloat16
 from jaxtyping import Bool as Bool
 from jaxtyping import Complex as Complex
@@ -34,6 +35,7 @@ from jaxtyping import UInt8 as UInt8
 from jaxtyping import UInt16 as UInt16
 from jaxtyping import UInt32 as UInt32
 from jaxtyping import UInt64 as UInt64
+from jaxtyping import jaxtyped
 from jaxtyping._storage import get_shape_memo, shape_str
 from typing_extensions import TypeVar
 
@@ -171,3 +173,28 @@ def tassert(t: Any, input: T | tuple[T, ...]):
         return
     else:
         assert isinstance(input, t), _make_error_str(input, t)
+
+
+_TypeOrCallable = TypeVar(
+    "_TypeOrCallable",
+    bound=Union[type, Callable],
+)
+
+
+def typecheck(fn: _TypeOrCallable, /) -> _TypeOrCallable:
+    """
+    Decorator to typecheck the function's arguments and return value.
+    This decorator uses `jaxtyping` to enforce type checking.
+    Args:
+        fn: Function to typecheck.
+    Returns:
+        The typechecked function.
+    """
+
+    __tracebackhide__ = True
+
+    # Ignore typechecking if the environment variable is set.
+    if DISABLE_ENV_KEY is not None and bool(int(os.environ.get(DISABLE_ENV_KEY, "0"))):
+        return fn
+
+    return jaxtyped(typechecker=beartype)(fn)
