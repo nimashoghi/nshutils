@@ -133,10 +133,7 @@ def _make_error_str(input: Any, t: Any) -> str:
     return "\n".join(error_components)
 
 
-T = TypeVar("T", infer_variance=True)
-
-
-def tassert(t: Any, input: T | tuple[T, ...]):
+def tassert(t: Any, input: object):
     """
     Typecheck the input against the given type.
 
@@ -150,12 +147,7 @@ def tassert(t: Any, input: T | tuple[T, ...]):
     if DISABLE_ENV_KEY is not None and bool(int(os.environ.get(DISABLE_ENV_KEY, "0"))):
         return
 
-    if isinstance(input, tuple):
-        for i in input:
-            assert isinstance(i, t), _make_error_str(i, t)
-        return
-    else:
-        assert isinstance(input, t), _make_error_str(input, t)
+    assert isinstance(input, t), _make_error_str(input, t)
 
 
 _TypeOrCallable = TypeVar(
