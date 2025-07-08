@@ -7,6 +7,7 @@ from collections.abc import Callable, Sequence
 from types import FrameType as _FrameType
 from typing import Any, Union
 
+import wadler_lindig as wl
 from beartype import beartype
 from jaxtyping import BFloat16 as BFloat16
 from jaxtyping import Bool as Bool
@@ -125,27 +126,8 @@ def _make_error_str(input: Any, t: Any) -> str:
     error_components.append("Type checking error:")
     if hasattr(t, "__instancecheck_str__"):
         error_components.append(t.__instancecheck_str__(input))
-    if torch is not None and torch.is_tensor(input):
-        try:
-            from .lovely import torch_repr
 
-            error_components.append(torch_repr(input))
-        except BaseException:
-            error_components.append(repr(input.shape))
-    elif jax is not None and isinstance(input, jax.Array):
-        try:
-            from .lovely import jax_repr
-
-            error_components.append(jax_repr(input))
-        except BaseException:
-            error_components.append(repr(input.shape))
-    elif np is not None and isinstance(input, np.ndarray):
-        try:
-            from .lovely import numpy_repr
-
-            error_components.append(numpy_repr(input))
-        except BaseException:
-            error_components.append(repr(input.shape))
+    error_components.append(wl.pformat(input))
     error_components.append(shape_str(get_shape_memo()))
 
     return "\n".join(error_components)
