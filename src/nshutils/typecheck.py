@@ -1,8 +1,16 @@
 from __future__ import annotations
 
+import sys
+
+# Before we do anything else, check Python >= 3.10 or raise an error.
+if sys.version_info < (3, 10):
+    raise RuntimeError(
+        "nshutils.typecheck requires Python 3.10 or higher. "
+        "Please upgrade your Python version to use this module."
+    )
+
 import logging
 import os
-import sys
 from collections.abc import Callable, Sequence
 from types import FrameType as _FrameType
 from typing import Any, Union
@@ -40,22 +48,6 @@ from jaxtyping import UInt64 as UInt64
 from jaxtyping import jaxtyped
 from jaxtyping._storage import get_shape_memo, shape_str
 from typing_extensions import TypeVar
-
-try:
-    import torch  # pyright: ignore[reportMissingImports]
-except ImportError:
-    torch = None
-
-try:
-    import np  # pyright: ignore[reportMissingImports]
-except ImportError:
-    np = None
-
-
-try:
-    import jax  # pyright: ignore[reportMissingImports]
-except ImportError:
-    jax = None
 
 log = logging.getLogger(__name__)
 

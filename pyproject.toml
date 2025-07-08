@@ -10,8 +10,9 @@ dependencies = [
     "lazy-loader",
     "numpy",
     "typing-extensions",
-    "jaxtyping",
-    "beartype",
+    "jaxtyping; python_version >= '3.10'",
+    "beartype; python_version >= '3.10'",
+    "wadler-lindig; python_version >= '3.10'",
     "uuid7",
 ]
 
