@@ -27,6 +27,7 @@ from jaxtyping import Int64 as Int64
 from jaxtyping import Integer as Integer
 from jaxtyping import Key as Key
 from jaxtyping import Num as Num
+from jaxtyping import PyTree as PyTree
 from jaxtyping import Real as Real
 from jaxtyping import Shaped as Shaped
 from jaxtyping import UInt as UInt
