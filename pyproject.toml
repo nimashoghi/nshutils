@@ -1,6 +1,6 @@
 [project]
 name = "nshutils"
-version = "0.34.0"
+version = "0.35.0"
 description = ""
 authors = [{ name = "Nima Shoghi", email = "nimashoghi@gmail.com" }]
 requires-python = ">=3.9,<4.0"
