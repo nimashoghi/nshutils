@@ -19,8 +19,14 @@ class _Backend:
 
     def is_available(self) -> bool:
         """Check if the backend is available."""
-        spec = importlib.util.find_spec(self.import_path)
-        return spec is not None
+        try:
+            is_available = importlib.util.find_spec(self.import_path) is not None
+        except ImportError:
+            is_available = False
+
+        if not is_available:
+            log.warning(f"Backend '{self.name}' is not available.")
+        return is_available
 
     @functools.cache
     def _imported_module(self):
@@ -77,7 +83,26 @@ def set_pytree_backend(name: BackendName):
         raise ImportError(f"Backend {backend} is not available.")
 
     _selected_backend = backend
-    log.info(f"Pytree backend set to '{backend}'.")
+    log.critical(f"Pytree backend set to '{backend}'.")
+
+
+@functools.lru_cache(maxsize=1)
+def _resolve_default_backend() -> _Backend | None:
+    if (
+        first_backend := next(
+            (b for b in DEFAULT_BACKENDS.values() if b.is_available()), None
+        )
+    ) is None:
+        log.warning(
+            "No available backend found in defaults. "
+            "Please set a backend explicitly using `nshutils.typecheck.set_pytree_backend`."
+        )
+        return None
+    log.warning(
+        f"Using backend '{first_backend.import_path}' from defaults as no explicit backend is set. "
+        "Consider setting a backend explicitly using `nshutils.typecheck.set_pytree_backend`."
+    )
+    return first_backend
 
 
 def _resolve_backend() -> _Backend:
@@ -88,15 +113,8 @@ def _resolve_backend() -> _Backend:
 
     # Otherwise, try to find the first available backend from the defaults,
     # however, we should strictly emit a warning if we do so.
-    if (
-        first_backend := next(
-            (b for b in DEFAULT_BACKENDS.values() if b.is_available()), None
-        )
-    ) is not None:
-        log.warning(
-            f"Using backend '{first_backend.import_path}' from defaults as no explicit backend is set."
-        )
-        return first_backend
+    if (available_backend := _resolve_default_backend()) is not None:
+        return available_backend
 
     raise RuntimeError("No available backend found.")
 
