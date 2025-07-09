@@ -11,9 +11,10 @@ if sys.version_info < (3, 10):
 
 import logging
 import os
+import typing
 from collections.abc import Callable, Sequence
 from types import FrameType as _FrameType
-from typing import Any, Union
+from typing import Any, TypeAlias, Union
 
 import wadler_lindig as wl
 from beartype import beartype
@@ -48,8 +49,30 @@ from jaxtyping import jaxtyped
 from jaxtyping._storage import get_shape_memo, shape_str
 from typing_extensions import TypeVar
 
-from ._pytree_type_dynamic import PyTree as PyTree
 from ._tree_util import set_pytree_backend as set_pytree_backend
+
+if typing.TYPE_CHECKING:
+    # Hack taken directly from `jaxtyping`.
+    # Set up to deliberately confuse a static type checker.
+    PyTree: TypeAlias = getattr(typing, "foo" + "bar")  # pyright: ignore[reportInvalidTypeForm]
+    # What's going on with this madness?
+    #
+    # At static-type-checking-time, we want `PyTree` to be a type for which both
+    # `PyTree` and `PyTree[Foo]` are equivalent to `Any`.
+    # (The intention is that `PyTree` be a runtime-only type; there's no real way to
+    # do more with static type checkers.)
+    #
+    # Unfortunately, this isn't possible: `Any` isn't subscriptable. And there's no
+    # equivalent way we can fake this using typing annotations. (In some sense the
+    # closest thing would be a `Protocol[T]` with no methods, but that's actually the
+    # opposite of what we want: that ends up allowing nothing at all.)
+    #
+    # The good news for us is that static type checkers have an internal escape hatch.
+    # If they can't figure out what a type is, then they just give up and allow
+    # anything. (I believe this is sometimes called `Unknown`.) Thus, this odd-looking
+    # annotation, which static type checkers aren't smart enough to resolve.
+else:
+    from ._pytree_type_dynamic import PyTree as PyTree
 
 log = logging.getLogger(__name__)
 
