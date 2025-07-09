@@ -49,6 +49,7 @@ from jaxtyping._storage import get_shape_memo, shape_str
 from typing_extensions import TypeVar
 
 from ._pytree_type_dynamic import PyTree as PyTree
+from ._tree_util import set_pytree_backend as set_pytree_backend
 
 log = logging.getLogger(__name__)
 
