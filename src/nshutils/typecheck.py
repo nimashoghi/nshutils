@@ -36,7 +36,6 @@ from jaxtyping import Int64 as Int64
 from jaxtyping import Integer as Integer
 from jaxtyping import Key as Key
 from jaxtyping import Num as Num
-from jaxtyping import PyTree as PyTree
 from jaxtyping import Real as Real
 from jaxtyping import Shaped as Shaped
 from jaxtyping import UInt as UInt
@@ -48,6 +47,8 @@ from jaxtyping import UInt64 as UInt64
 from jaxtyping import jaxtyped
 from jaxtyping._storage import get_shape_memo, shape_str
 from typing_extensions import TypeVar
+
+from ._pytree_type_dynamic import PyTree as PyTree
 
 log = logging.getLogger(__name__)
 
