@@ -2,17 +2,28 @@ from __future__ import annotations
 
 import contextlib
 import importlib.metadata
+import warnings
+from collections.abc import Callable
 from typing import Any, Protocol, cast
 
 from typing_extensions import TypeVar
 
 T = TypeVar("T", infer_variance=True)
+TFn = TypeVar("TFn", bound=Callable)
+
+
+class _SnoopInstance(Protocol):
+    def __enter__(self) -> None: ...
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None: ...
+
+    def __call__(self, fn: TFn) -> TFn: ...
 
 
 class SnoopConstructor(Protocol):
-    def __call__(self, *args, **kwargs) -> contextlib.AbstractContextManager: ...
+    def __call__(self, *args, **kwargs) -> _SnoopInstance: ...
 
-    def disable(self) -> contextlib.AbstractContextManager: ...
+    def disable(self) -> _SnoopInstance: ...
 
 
 snoop: SnoopConstructor
@@ -51,7 +62,7 @@ try:
         # package is not installed
         pass
 
-    def default_format(x):
+    def default_torch_format(x):
         try:
             from .lovely import torch_repr
 
@@ -79,7 +90,7 @@ try:
         def __init__(
             self,
             *args,
-            tensor_format=default_format,
+            tensor_format=default_torch_format,
             numpy_format=default_numpy_format,
             jax_format=default_jax_format,
             **kwargs,
@@ -224,26 +235,26 @@ try:
     snoop = cast(Any, _Snoop())
 
 except ImportError:
-    import warnings
-    from contextlib import nullcontext
-
     from typing_extensions import override
 
-    _has_warned = False
+    class _snoop_cls(contextlib.nullcontext, contextlib.ContextDecorator):
+        def __init__(self, *, _should_warn: bool = True):
+            super().__init__()
 
-    class _snoop_cls(nullcontext):
+            self._should_warn = _should_warn
+            self._has_warned = False
+
         @classmethod
         def disable(cls):
-            return nullcontext()
+            return cls(_should_warn=False)
 
         @override
         def __enter__(self):
-            global _has_warned
-            if not _has_warned:
+            if self._should_warn and not self._has_warned:
                 warnings.warn(
                     "snoop is not installed, please install it to enable snoop"
                 )
-                _has_warned = True
+                self._has_warned = True
 
             return super().__enter__()
 
