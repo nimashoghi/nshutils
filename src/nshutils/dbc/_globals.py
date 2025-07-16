@@ -1,8 +1,10 @@
 """Define global variables used among the modules."""
 
+from __future__ import annotations
+
 import os
 import reprlib
-from typing import TypeVar, Callable, Any  # pylint: disable=unused-import
+from typing import Any, Callable, TypeAlias, TypeVar  # pylint: disable=unused-import
 
 # Default representation instance.
 #
@@ -27,6 +29,8 @@ aRepr.maxother = 256
 #
 # Contracts marked with SLOW are also disabled if the interpreter is run in optimized mode (``-O`` or ``-OO``).
 SLOW = __debug__ and os.environ.get("ICONTRACT_SLOW", "") != ""
-CallableT = TypeVar("CallableT", bound=Callable[..., Any])
-ClassT = TypeVar("ClassT", bound=type)
+AnyCallable: TypeAlias = Callable[..., Any]
+CallableT = TypeVar("CallableT", bound=AnyCallable)
+AnyClass: TypeAlias = type[Any]
+ClassT = TypeVar("ClassT", bound=AnyClass)
 ExceptionT = TypeVar("ExceptionT", bound=BaseException)

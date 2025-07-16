@@ -1,5 +1,7 @@
 """Handle re-computation of values of a function given its abstract syntax tree and function frame."""
 
+from __future__ import annotations
+
 import ast
 import builtins
 import copy
@@ -7,22 +9,21 @@ import functools
 import inspect
 import sys
 import uuid
+from _ast import If
 from typing import (
     Any,
-    Mapping,
-    Dict,
-    List,
-    Optional,
-    Union,
-    Tuple,
-    Set,
     Callable,
-    cast,
+    Dict,
     Iterable,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
     TypeVar,
-)  # pylint: disable=unused-import
-
-from _ast import If
+    Union,
+    cast,
+)
 
 
 class Placeholder:

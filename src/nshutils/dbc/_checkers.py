@@ -20,7 +20,7 @@ from typing import (
 )
 
 from . import _represent
-from ._globals import CallableT, ClassT
+from ._globals import AnyCallable, AnyClass, CallableT, ClassT
 from ._types import Contract, Invariant, InvariantCheckEvent, Snapshot
 from .errors import ViolationError
 
@@ -187,7 +187,7 @@ def _assert_no_invalid_kwargs(kwargs: Any) -> Optional[TypeError]:
 
 
 def _unpack_pre_snap_posts(
-    wrapper: CallableT,
+    wrapper: AnyCallable,
 ) -> Tuple[List[List[Contract]], List[Snapshot], List[Contract]]:
     """Retrieve the preconditions, snapshots and postconditions defined for the given wrapper checker."""
     preconditions = getattr(wrapper, "__preconditions__")  # type: List[List[Contract]]
@@ -331,7 +331,7 @@ async def _assert_preconditions_async(
 def _assert_preconditions(
     preconditions: List[List[Contract]],
     resolved_kwargs: Mapping[str, Any],
-    func: CallableT,
+    func: AnyCallable,
 ) -> Optional[BaseException]:
     """Assert that the preconditions of a sync function hold."""
     exception = None  # type: Optional[BaseException]
@@ -412,7 +412,7 @@ async def _capture_old_async(
 
 
 def _capture_old(
-    snapshots: List[Snapshot], resolved_kwargs: Mapping[str, Any], func: CallableT
+    snapshots: List[Snapshot], resolved_kwargs: Mapping[str, Any], func: AnyCallable
 ) -> "Old":
     """Capture all snapshots of a sync function and return the captured values bundled in an ``Old``."""
     old_as_mapping = dict()  # type: MutableMapping[str, Any]
@@ -482,7 +482,9 @@ async def _assert_postconditions_async(
 
 
 def _assert_postconditions(
-    postconditions: List[Contract], resolved_kwargs: Mapping[str, Any], func: CallableT
+    postconditions: List[Contract],
+    resolved_kwargs: Mapping[str, Any],
+    func: AnyCallable,
 ) -> Optional[BaseException]:
     """Assert that the postconditions of a sync function hold."""
     assert "result" in resolved_kwargs, (
@@ -870,7 +872,7 @@ def decorate_with_checker(func: CallableT) -> CallableT:
     return wrapper  # type: ignore
 
 
-def add_precondition_to_checker(checker: CallableT, contract: Contract) -> None:
+def add_precondition_to_checker(checker: AnyCallable, contract: Contract) -> None:
     """
     Add the precondition to the function's checker.
 
@@ -894,7 +896,7 @@ def add_precondition_to_checker(checker: CallableT, contract: Contract) -> None:
     preconditions[0].append(contract)
 
 
-def add_snapshot_to_checker(checker: CallableT, snapshot: Snapshot) -> None:
+def add_snapshot_to_checker(checker: AnyCallable, snapshot: Snapshot) -> None:
     """
     Add the snapshot to the function's checker.
 
@@ -917,7 +919,7 @@ def add_snapshot_to_checker(checker: CallableT, snapshot: Snapshot) -> None:
     snapshots.append(snapshot)
 
 
-def add_postcondition_to_checker(checker: CallableT, contract: Contract) -> None:
+def add_postcondition_to_checker(checker: AnyCallable, contract: Contract) -> None:
     """
     Add the postcondition to the function's checker.
 
@@ -1166,7 +1168,7 @@ class _DummyClass:
 _SLOT_WRAPPER_TYPE = type(_DummyClass.__init__)  # pylint: disable=invalid-name
 
 
-def _already_decorated_with_invariants(func: CallableT) -> bool:
+def _already_decorated_with_invariants(func: AnyCallable) -> bool:
     """Check if the function has been already decorated with an invariant check by going through its decorator stack."""
     already_decorated = False
     for a_decorator in _walk_decorator_stack(func=func):
@@ -1177,7 +1179,7 @@ def _already_decorated_with_invariants(func: CallableT) -> bool:
     return already_decorated
 
 
-def add_invariant_checks(cls: ClassT) -> None:
+def add_invariant_checks(cls: AnyClass) -> None:
     """Decorate each of the class functions with invariant checks if not already decorated."""
     # Candidates for the decoration as list of (name, dir() value)
     init_func = None  # type: Optional[Callable[..., None]]

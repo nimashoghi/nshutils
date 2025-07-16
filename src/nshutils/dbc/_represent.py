@@ -9,25 +9,14 @@ import reprlib
 import sys
 import textwrap
 import uuid
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Mapping,
-    MutableMapping,
-    Optional,
-    cast,
-)  # pylint: disable=unused-import
+from collections.abc import Callable, Mapping, MutableMapping
+from typing import Any, Optional, cast
 
 import asttokens.asttokens
 
 from . import _recompute
-from ._globals import CallableT
+from ._globals import AnyCallable
 from ._types import Contract
-
-# pylint does not play with typing.Mapping.
-# pylint: disable=unsubscriptable-object
 
 
 def _representable(value: Any) -> bool:
@@ -57,7 +46,7 @@ class Visitor(ast.NodeVisitor):
     def __init__(
         self,
         recomputed_values: Mapping[ast.AST, Any],
-        variable_lookup: List[Mapping[str, Any]],
+        variable_lookup: list[Mapping[str, Any]],
         atok: asttokens.asttokens.ASTTokens,
     ) -> None:
         """
@@ -185,7 +174,7 @@ class Visitor(ast.NodeVisitor):
         self.generic_visit(node=node)
 
 
-def is_lambda(a_function: CallableT) -> bool:
+def is_lambda(a_function: AnyCallable) -> bool:
     """
     Check whether the function is a lambda function.
 
@@ -239,7 +228,7 @@ class DecoratorInspection:
 
 
 def inspect_decorator(
-    lines: List[str], lineno: int, filename: str
+    lines: list[str], lineno: int, filename: str
 ) -> DecoratorInspection:
     """
     Parse the file in which the decorator is called and figure out the corresponding call AST node.
@@ -259,7 +248,7 @@ def inspect_decorator(
         )
 
     # Go up till a line starts with a decorator
-    decorator_lineno = None  # type: Optional[int]
+    decorator_lineno = None  # type: int | None
     for i in range(lineno, -1, -1):
         if _DECORATOR_RE.match(lines[i]):
             decorator_lineno = i
@@ -273,7 +262,7 @@ def inspect_decorator(
         )
 
     # Find the decorator end -- it's either a function definition, a class definition or another decorator
-    decorator_end_lineno = None  # type: Optional[int]
+    decorator_end_lineno = None  # type: int | None
     for i in range(lineno + 1, len(lines)):
         line = lines[i]
 
@@ -366,7 +355,7 @@ def inspect_decorator(
 
 def find_lambda_condition(
     decorator_inspection: DecoratorInspection,
-) -> Optional[ConditionLambdaInspection]:
+) -> ConditionLambdaInspection | None:
     """
     Inspect the decorator and extract the condition as lambda.
 
@@ -374,7 +363,7 @@ def find_lambda_condition(
     """
     call_node = decorator_inspection.node
 
-    lambda_node = None  # type: Optional[ast.Lambda]
+    lambda_node = None  # type: ast.Lambda | None
 
     if len(call_node.args) > 0:
         assert isinstance(call_node.args[0], ast.Lambda), (
@@ -409,7 +398,7 @@ def find_lambda_condition(
 
 def inspect_lambda_condition(
     condition: Callable[..., Any],
-) -> Optional[ConditionLambdaInspection]:
+) -> ConditionLambdaInspection | None:
     """
     Try to extract the source code of the condition as lambda.
 
@@ -435,7 +424,7 @@ def inspect_lambda_condition(
 def collect_variable_lookup(
         condition: Callable[..., Any],
         resolved_kwargs: Optional[Mapping[str, Any]] = None
-) -> List[Mapping[str, Any]]:
+) -> list[Mapping[str, Any]]:
     """
     Collect the variable lookups in order of precedence.
 
@@ -447,7 +436,7 @@ def collect_variable_lookup(
         If ``resolved_kwargs`` is None, no keyword arguments will be added to the variable look-up table.
     """
     # fmt: on
-    variable_lookup = []  # type: List[Mapping[str, Any]]
+    variable_lookup = []  # type: list[Mapping[str, Any]]
 
     ##
     # Condition-specific kwargs
@@ -460,7 +449,7 @@ def collect_variable_lookup(
     # Add closure to the lookup
     ##
 
-    closure_dict = dict()  # type: Dict[str, Any]
+    closure_dict = dict()  # type: dict[str, Any]
 
     if condition.__closure__ is not None:
         closure_cells = condition.__closure__
@@ -486,7 +475,7 @@ def collect_variable_lookup(
 
 
 def repr_values(condition: Callable[..., bool], lambda_inspection: Optional[ConditionLambdaInspection],
-                resolved_kwargs: Mapping[str, Any], a_repr: reprlib.Repr) -> List[str]:
+                resolved_kwargs: Mapping[str, Any], a_repr: reprlib.Repr) -> list[str]:
     """
     Represent function arguments and frame values in the error message on contract breach.
 
@@ -553,7 +542,7 @@ def repr_values(condition: Callable[..., bool], lambda_inspection: Optional[Cond
         if key not in reprs and _representable(value=val):
             reprs[key] = val
 
-    parts = []  # type: List[str]
+    parts = []  # type: list[str]
 
     # We need to sort in order to present the same violation error on repeated violations.
     # Otherwise, the order of the reported arguments may be arbitrary.
@@ -572,7 +561,7 @@ def repr_values(condition: Callable[..., bool], lambda_inspection: Optional[Cond
     return parts
 
 
-def represent_condition(condition: CallableT) -> str:
+def represent_condition(condition: AnyCallable) -> str:
     """Represent the condition as a string."""
     lambda_inspection = None  # type: Optional[ConditionLambdaInspection]
     if not is_lambda(a_function=condition):
@@ -589,7 +578,7 @@ def represent_condition(condition: CallableT) -> str:
 
 def generate_message(contract: Contract, resolved_kwargs: Mapping[str, Any]) -> str:
     """Generate the message upon contract violation."""
-    parts = []  # type: List[str]
+    parts = []  # type: list[str]
 
     if contract.location is not None:
         parts.append("{}:\n".format(contract.location))
