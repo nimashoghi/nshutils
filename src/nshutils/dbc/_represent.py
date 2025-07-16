@@ -10,7 +10,7 @@ import sys
 import textwrap
 import uuid
 from collections.abc import Callable, Mapping, MutableMapping
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 import asttokens.asttokens
 
@@ -423,7 +423,7 @@ def inspect_lambda_condition(
 # fmt: off
 def collect_variable_lookup(
         condition: Callable[..., Any],
-        resolved_kwargs: Optional[Mapping[str, Any]] = None
+        resolved_kwargs: Mapping[str, Any] | None = None
 ) -> list[Mapping[str, Any]]:
     """
     Collect the variable lookups in order of precedence.
@@ -474,7 +474,7 @@ def collect_variable_lookup(
     return variable_lookup
 
 
-def repr_values(condition: Callable[..., bool], lambda_inspection: Optional[ConditionLambdaInspection],
+def repr_values(condition: Callable[..., bool], lambda_inspection: ConditionLambdaInspection | None,
                 resolved_kwargs: Mapping[str, Any], a_repr: reprlib.Repr) -> list[str]:
     """
     Represent function arguments and frame values in the error message on contract breach.
@@ -513,7 +513,7 @@ def repr_values(condition: Callable[..., bool], lambda_inspection: Optional[Cond
     else:
         assert lambda_inspection is None, "Expected no lambda inspection in a condition given as a non-lambda function"
 
-    reprs = None  # type: Optional[MutableMapping[str, Any]]
+    reprs = None  # type: MutableMapping[str, Any] | None
 
     if lambda_inspection is not None:
         variable_lookup = collect_variable_lookup(condition=condition, resolved_kwargs=selected_kwargs)
@@ -563,7 +563,7 @@ def repr_values(condition: Callable[..., bool], lambda_inspection: Optional[Cond
 
 def represent_condition(condition: AnyCallable) -> str:
     """Represent the condition as a string."""
-    lambda_inspection = None  # type: Optional[ConditionLambdaInspection]
+    lambda_inspection = None  # type: ConditionLambdaInspection | None
     if not is_lambda(a_function=condition):
         condition_repr = condition.__name__
     else:
@@ -586,7 +586,7 @@ def generate_message(contract: Contract, resolved_kwargs: Mapping[str, Any]) -> 
     if contract.description is not None:
         parts.append("{}: ".format(contract.description))
 
-    lambda_inspection = None  # type: Optional[ConditionLambdaInspection]
+    lambda_inspection = None  # type: ConditionLambdaInspection | None
     if not is_lambda(a_function=contract.condition):
         condition_text = contract.condition.__name__
     else:

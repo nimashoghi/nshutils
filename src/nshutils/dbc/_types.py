@@ -5,16 +5,8 @@ from __future__ import annotations
 import enum
 import inspect
 import reprlib
-from typing import (
-    Any,
-    Callable,
-    List,
-    Optional,
-    Set,
-    Type,
-    Union,
-    cast,
-)  # pylint: disable=unused-import
+from collections.abc import Callable
+from typing import Any, cast
 
 from ._globals import ExceptionT, aRepr
 
@@ -25,12 +17,11 @@ class Contract:
     def __init__(
         self,
         condition: Callable[..., Any],
-        description: Optional[str] = None,
+        description: str | None = None,
         a_repr: reprlib.Repr = aRepr,
-        error: Optional[
-            Union[Callable[..., ExceptionT], Type[ExceptionT], BaseException]
-        ] = None,
-        location: Optional[str] = None,
+        error: (Callable[..., ExceptionT] | type[ExceptionT] | BaseException)
+        | None = None,
+        location: str | None = None,
     ) -> None:
         """
         Initialize.
@@ -52,8 +43,8 @@ class Contract:
         signature = inspect.signature(condition)
 
         # All argument names of the condition
-        self.condition_args = list(signature.parameters.keys())  # type: List[str]
-        self.condition_arg_set = set(self.condition_args)  # type: Set[str]
+        self.condition_args = list(signature.parameters.keys())  # type: list[str]
+        self.condition_arg_set = set(self.condition_args)  # type: set[str]
 
         # Names of the mandatory arguments of the condition
         self.mandatory_args = [
@@ -66,8 +57,8 @@ class Contract:
         self._a_repr = a_repr
 
         self.error = error
-        self.error_args = None  # type: Optional[List[str]]
-        self.error_arg_set = None  # type: Optional[Set[str]]
+        self.error_args = None  # type: list[str] | None
+        self.error_arg_set = None  # type: set[str] | None
         if error is not None and (inspect.isfunction(error) or inspect.ismethod(error)):
             error_as_callable = cast(Callable[..., ExceptionT], error)
             self.error_args = list(
@@ -84,8 +75,8 @@ class Snapshot:
     def __init__(
         self,
         capture: Callable[..., Any],
-        name: Optional[str] = None,
-        location: Optional[str] = None,
+        name: str | None = None,
+        location: str | None = None,
     ) -> None:
         """
         Initialize.
@@ -100,7 +91,7 @@ class Snapshot:
         """
         self.capture = capture
 
-        args = list(inspect.signature(capture).parameters.keys())  # type: List[str]
+        args = list(inspect.signature(capture).parameters.keys())  # type: list[str]
 
         if name is None:
             if len(args) == 0:
@@ -151,12 +142,11 @@ class Invariant(Contract):
         self,
         check_on: InvariantCheckEvent,
         condition: Callable[..., Any],
-        description: Optional[str] = None,
+        description: str | None = None,
         a_repr: reprlib.Repr = aRepr,
-        error: Optional[
-            Union[Callable[..., ExceptionT], Type[ExceptionT], BaseException]
-        ] = None,
-        location: Optional[str] = None,
+        error: (Callable[..., ExceptionT] | type[ExceptionT] | BaseException)
+        | None = None,
+        location: str | None = None,
     ) -> None:
         """Initialize with the given values."""
         assert not hasattr(self, "check_on")

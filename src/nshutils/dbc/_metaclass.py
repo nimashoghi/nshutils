@@ -6,27 +6,15 @@ import abc
 import inspect
 import sys
 import weakref
-from typing import (
-    Any,
-    Callable,
-    List,
-    MutableMapping,
-    Optional,
-    Set,
-    Type,
-    TypeVar,
-    cast,
-)  # pylint: disable=unused-import
+from collections.abc import Callable, MutableMapping
+from typing import Any, TypeVar, cast
 
 from . import _checkers
 from ._types import Contract, Snapshot
 
-# Pylint can't deal with multiple Python versions and breaks on ``if``'s on method definitions.
-# pylint: skip-file
-
 
 def _collapse_invariants(
-    bases: List[type], namespace: MutableMapping[str, Any], invariants_dunder: str
+    bases: list[type], namespace: MutableMapping[str, Any], invariants_dunder: str
 ) -> None:
     """
     Collect invariants from the bases and merge them with the invariants in the namespace.
@@ -42,7 +30,7 @@ def _collapse_invariants(
     ), "Unexpected invariants_dunder: {!r}".format(invariants_dunder)
 
     # region Invariants
-    invariants = []  # type: List[Contract]
+    invariants = []  # type: list[Contract]
 
     # Add invariants of the bases
     for base in bases:
@@ -61,11 +49,11 @@ def _collapse_invariants(
 
 
 def _collapse_preconditions(
-    base_preconditions: List[List[Contract]],
+    base_preconditions: list[list[Contract]],
     bases_have_func: bool,
-    preconditions: List[List[Contract]],
+    preconditions: list[list[Contract]],
     func: Callable[..., Any],
-) -> List[List[Contract]]:
+) -> list[list[Contract]]:
     """
     Collapse function preconditions with the preconditions collected from the base classes.
 
@@ -89,8 +77,8 @@ def _collapse_preconditions(
 
 
 def _collapse_snapshots(
-    base_snapshots: List[Snapshot], snapshots: List[Snapshot]
-) -> List[Snapshot]:
+    base_snapshots: list[Snapshot], snapshots: list[Snapshot]
+) -> list[Snapshot]:
     """
     Collapse snapshots of pre-invocation values with the snapshots collected from the base classes.
 
@@ -98,7 +86,7 @@ def _collapse_snapshots(
     :param snapshots: snapshots of the function (before the collapse)
     :return: collapsed sequence of snapshots
     """
-    seen_names = set()  # type: Set[str]
+    seen_names = set()  # type: set[str]
     collapsed = base_snapshots + snapshots
 
     for snap in collapsed:
@@ -117,8 +105,8 @@ def _collapse_snapshots(
 
 
 def _collapse_postconditions(
-    base_postconditions: List[Contract], postconditions: List[Contract]
-) -> List[Contract]:
+    base_postconditions: list[Contract], postconditions: list[Contract]
+) -> list[Contract]:
     """
     Collapse function postconditions with the postconditions collected from the base classes.
 
@@ -130,7 +118,7 @@ def _collapse_postconditions(
 
 
 def _decorate_namespace_function(
-    bases: List[type], namespace: MutableMapping[str, Any], key: str
+    bases: list[type], namespace: MutableMapping[str, Any], key: str
 ) -> None:
     """Collect preconditions and postconditions from the bases and decorate the function at the ``key``."""
     value = namespace[key]
@@ -145,9 +133,9 @@ def _decorate_namespace_function(
         raise NotImplementedError("Unexpected value for a function: {}".format(value))
 
     # Collect preconditions and postconditions of the function
-    preconditions = []  # type: List[List[Contract]]
-    snapshots = []  # type: List[Snapshot]
-    postconditions = []  # type: List[Contract]
+    preconditions = []  # type: list[list[Contract]]
+    snapshots = []  # type: list[Snapshot]
+    postconditions = []  # type: list[Contract]
 
     contract_checker = _checkers.find_checker(func=func)
     if contract_checker is not None:
@@ -161,9 +149,9 @@ def _decorate_namespace_function(
     # (and not collapsed) since initialization is an operation specific to the concrete class and
     # does not relate to the class hierarchy.
     if key not in ["__init__", "__new__"]:
-        base_preconditions = []  # type: List[List[Contract]]
-        base_snapshots = []  # type: List[Snapshot]
-        base_postconditions = []  # type: List[Contract]
+        base_preconditions = []  # type: list[list[Contract]]
+        base_snapshots = []  # type: list[Snapshot]
+        base_postconditions = []  # type: list[Contract]
 
         bases_have_func = False
         for base in bases:
@@ -223,15 +211,15 @@ def _decorate_namespace_function(
 
 
 def _decorate_namespace_property(
-    bases: List[type], namespace: MutableMapping[str, Any], key: str
+    bases: list[type], namespace: MutableMapping[str, Any], key: str
 ) -> None:
     """Collect contracts for all getters/setters/deleters corresponding to ``key`` and decorate them."""
     value = namespace[key]
     assert isinstance(value, property)
 
-    fget = value.fget  # type: Optional[Callable[..., Any]]
-    fset = value.fset  # type: Optional[Callable[..., Any]]
-    fdel = value.fdel  # type: Optional[Callable[..., Any]]
+    fget = value.fget  # type: Callable[..., Any] | None
+    fset = value.fset  # type: Callable[..., Any] | None
+    fdel = value.fdel  # type: Callable[..., Any] | None
 
     for func in [value.fget, value.fset, value.fdel]:
         func = cast(Callable[..., Any], func)
@@ -240,9 +228,9 @@ def _decorate_namespace_property(
             continue
 
         # Collect the preconditions and postconditions from bases
-        base_preconditions = []  # type: List[List[Contract]]
-        base_snapshots = []  # type: List[Snapshot]
-        base_postconditions = []  # type: List[Contract]
+        base_preconditions = []  # type: list[list[Contract]]
+        base_snapshots = []  # type: list[Snapshot]
+        base_postconditions = []  # type: list[Contract]
 
         bases_have_func = False
         for base in bases:
@@ -282,9 +270,9 @@ def _decorate_namespace_property(
                     base_postconditions.extend(base_contract_checker.__postconditions__)
 
         # Add preconditions and postconditions of the function
-        preconditions = []  # type: List[List[Contract]]
-        snapshots = []  # type: List[Snapshot]
-        postconditions = []  # type: List[Contract]
+        preconditions = []  # type: list[list[Contract]]
+        snapshots = []  # type: list[Snapshot]
+        postconditions = []  # type: list[Contract]
 
         contract_checker = _checkers.find_checker(func=func)
         if contract_checker is not None:
@@ -333,7 +321,7 @@ def _decorate_namespace_property(
 
 
 def _dbc_decorate_namespace(
-    bases: List[type], namespace: MutableMapping[str, Any]
+    bases: list[type], namespace: MutableMapping[str, Any]
 ) -> None:
     """
     Collect invariants, preconditions and postconditions from the bases and decorate all the methods.
@@ -367,7 +355,7 @@ _CONTRACT_CLASSES = weakref.WeakSet()  # type: ignore
 T = TypeVar("T")  # pylint: disable=invalid-name
 
 
-def _register_for_hypothesis(cls: Type[T]) -> None:
+def _register_for_hypothesis(cls: type[T]) -> None:
     """
     Add ``cls`` to ``_CONTRACT_CLASSES`` to be later registered with icontract_hypothesis.
 

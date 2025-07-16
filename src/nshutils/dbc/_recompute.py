@@ -10,20 +10,8 @@ import inspect
 import sys
 import uuid
 from _ast import If
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from collections.abc import Callable, Iterable, Mapping
+from typing import Any, TypeVar, cast
 
 
 class Placeholder:
@@ -40,7 +28,7 @@ PLACEHOLDER = Placeholder()
 class FirstExceptionInAll:
     """Represent a first exception case for which an all quantifier does not apply."""
 
-    def __init__(self, result: Any, inputs: Tuple[Tuple[str, Any]]) -> None:
+    def __init__(self, result: Any, inputs: tuple[tuple[str, Any]]) -> None:
         """
         Initialize with the given values.
 
@@ -62,8 +50,8 @@ class _CollectStoredNamesVisitor(ast.NodeVisitor):
     """Traverse the abstract syntax tree and collect all the names which are stored."""
 
     def __init__(self) -> None:
-        self.names = []  # type: List[str]
-        self._name_set = set()  # type: Set[str]
+        self.names = []  # type: list[str]
+        self._name_set = set()  # type: set[str]
 
     def visit_Name(self, node: ast.Name) -> Any:  # pylint: disable=invalid-name
         """Collect the name if it is in a store context."""
@@ -72,7 +60,7 @@ class _CollectStoredNamesVisitor(ast.NodeVisitor):
             self._name_set.add(node.id)
 
 
-def _collect_stored_names(nodes: Iterable[ast.expr]) -> List[str]:
+def _collect_stored_names(nodes: Iterable[ast.expr]) -> list[str]:
     visitor = _CollectStoredNamesVisitor()
     for node in nodes:
         visitor.visit(node)
@@ -83,7 +71,7 @@ class _CollectNameLoadsVisitor(ast.NodeVisitor):
     """Traverse the abstract syntax tree and collect all the name nodes in Load context."""
 
     def __init__(self) -> None:
-        self.nodes = []  # type: List[ast.expr]
+        self.nodes = []  # type: list[ast.expr]
 
     def visit_Name(self, node: ast.Name) -> Any:  # pylint: disable=invalid-name
         """Collect the name if it is in a load context."""
@@ -91,7 +79,7 @@ class _CollectNameLoadsVisitor(ast.NodeVisitor):
             self.nodes.append(node)
 
 
-def _collect_name_loads(nodes: Iterable[ast.expr]) -> List[ast.expr]:
+def _collect_name_loads(nodes: Iterable[ast.expr]) -> list[ast.expr]:
     visitor = _CollectNameLoadsVisitor()
     for node in nodes:
         visitor.visit(node)
@@ -172,7 +160,7 @@ def _translate_all_expression_to_a_module(
     )
 
     # Previous inner block to be added as body to the next outer block
-    block = None  # type: Optional[List[ast.stmt]]
+    block = None  # type: list[ast.stmt] | None
     for i, comprehension in enumerate(reversed(generator_exp.generators)):
         if i == 0:
             # This is the inner-most comprehension.
@@ -230,7 +218,7 @@ def _translate_all_expression_to_a_module(
                 ),
                 decorator_list=[],
                 body=block,
-            )  # type: Union[ast.FunctionDef, ast.AsyncFunctionDef]
+            )  # type: ast.FunctionDef | ast.AsyncFunctionDef
 
             module_node = ast.Module(body=[func_def_node])
         else:
@@ -247,7 +235,7 @@ def _translate_all_expression_to_a_module(
                 ),
                 decorator_list=[],
                 body=block,
-            )
+            )  # type: ignore
 
             module_node = ast.Module(body=[func_def_node], type_ignores=[])
     else:
@@ -281,7 +269,7 @@ def _translate_all_expression_to_a_module(
                 ),
                 decorator_list=[],
                 body=block,
-            )
+            )  # type: ignore
 
             module_node = ast.Module(body=[async_func_def_node], type_ignores=[])
 
@@ -302,7 +290,7 @@ class Visitor(ast.NodeVisitor):
     # pylint: disable=invalid-name
     # pylint: disable=missing-docstring
 
-    def __init__(self, variable_lookup: List[Mapping[str, Any]]) -> None:
+    def __init__(self, variable_lookup: list[Mapping[str, Any]]) -> None:
         """
         Initialize.
 
@@ -310,7 +298,7 @@ class Visitor(ast.NodeVisitor):
         """
         # _name_to_value maps the variable names to variable values.
         # This is important for Load contexts as well as Store contexts in, e.g., named expressions.
-        self._name_to_value = dict()  # type: Dict[str, Any]
+        self._name_to_value = dict()  # type: dict[str, Any]
 
         # Resolve precedence of variable lookups
         for lookup in variable_lookup:
@@ -319,11 +307,11 @@ class Visitor(ast.NodeVisitor):
                     self._name_to_value[name] = value
 
         # value assigned to each visited node
-        self.recomputed_values = dict()  # type: Dict[ast.AST, Any]
+        self.recomputed_values = dict()  # type: dict[ast.AST, Any]
 
     if sys.version_info < (3, 8):
 
-        def visit_Num(self, node: ast.Num) -> Union[int, float]:
+        def visit_Num(self, node: ast.Num) -> int | float:
             """Recompute the value as the number at the node."""
             result = node.n
 
@@ -360,11 +348,9 @@ class Visitor(ast.NodeVisitor):
 
     if sys.version_info >= (3, 6):
 
-        def visit_FormattedValue(
-            self, node: ast.FormattedValue
-        ) -> Union[str, Placeholder]:
+        def visit_FormattedValue(self, node: ast.FormattedValue) -> str | Placeholder:
             """Format the node value."""
-            recomputed_format_spec = None  # type: Optional[Union[str, Placeholder]]
+            recomputed_format_spec = None  # type: str | Placeholder | None
             if node.format_spec is not None:
                 # The following assert serves only documentation purposes so that the code is easier to follow.
                 assert isinstance(node.format_spec, ast.JoinedStr)
@@ -402,7 +388,7 @@ class Visitor(ast.NodeVisitor):
 
             return "".join(fmt).format(recomputed_value)
 
-        def visit_JoinedStr(self, node: ast.JoinedStr) -> Union[str, Placeholder]:
+        def visit_JoinedStr(self, node: ast.JoinedStr) -> str | Placeholder:
             """Visit the values and concatenate them."""
             recomputed_values = [self.visit(value_node) for value_node in node.values]
 
@@ -415,7 +401,7 @@ class Visitor(ast.NodeVisitor):
             self.recomputed_values[node] = joined_str
             return joined_str
 
-    def visit_List(self, node: ast.List) -> Union[List[Any], Placeholder]:
+    def visit_List(self, node: ast.List) -> list[Any] | Placeholder:
         """Visit the elements and assemble the results into a list."""
         if isinstance(node.ctx, ast.Store):
             raise NotImplementedError("Can not compute the value of a Store on a list")
@@ -429,7 +415,7 @@ class Visitor(ast.NodeVisitor):
         self.recomputed_values[node] = recomputed_elts
         return recomputed_elts
 
-    def visit_Tuple(self, node: ast.Tuple) -> Union[Tuple[Any, ...], Placeholder]:
+    def visit_Tuple(self, node: ast.Tuple) -> tuple[Any, ...] | Placeholder:
         """Visit the elements and assemble the results into a tuple."""
         if isinstance(node.ctx, ast.Store):
             raise NotImplementedError("Can not compute the value of a Store on a tuple")
@@ -442,7 +428,7 @@ class Visitor(ast.NodeVisitor):
         self.recomputed_values[node] = recomputed_elts
         return recomputed_elts
 
-    def visit_Set(self, node: ast.Set) -> Union[Set[Any], Placeholder]:
+    def visit_Set(self, node: ast.Set) -> set[Any] | Placeholder:
         """Visit the elements and assemble the results into a set."""
         recomputed_elts = set(self.visit(node=elt) for elt in node.elts)
         # Please see "NOTE ABOUT PLACEHOLDERS AND RE-COMPUTATION"
@@ -452,9 +438,9 @@ class Visitor(ast.NodeVisitor):
         self.recomputed_values[node] = recomputed_elts
         return recomputed_elts
 
-    def visit_Dict(self, node: ast.Dict) -> Union[Dict[Any, Any], Placeholder]:
+    def visit_Dict(self, node: ast.Dict) -> dict[Any, Any] | Placeholder:
         """Visit keys and values and assemble a dictionary with the results."""
-        recomputed_dict = dict()  # type: Dict[Any, Any]
+        recomputed_dict = dict()  # type: dict[Any, Any]
         for key, val in zip(node.keys, node.values):
             assert isinstance(key, ast.AST)
             assert isinstance(val, ast.AST)
@@ -480,7 +466,7 @@ class Visitor(ast.NodeVisitor):
                 )
             )
 
-        result = None  # type: Optional[Any]
+        result = None  # type: Any | None
 
         if node.id in self._name_to_value:
             result = self._name_to_value[node.id]
@@ -600,7 +586,7 @@ class Visitor(ast.NodeVisitor):
         ):
             return PLACEHOLDER
 
-        result = None  # type: Optional[Any]
+        result = None  # type: Any | None
         for comparator, op in zip(comparators, node.ops):
             if isinstance(op, ast.Eq):
                 comparison = left == comparator
@@ -671,14 +657,14 @@ class Visitor(ast.NodeVisitor):
             if result is PLACEHOLDER:
                 return PLACEHOLDER
         else:
-            args = []  # type: List[Any]
+            args = []  # type: list[Any]
             for arg_node in node.args:
                 if isinstance(arg_node, ast.Starred):
                     args.extend(self.visit(node=arg_node))
                 else:
                     args.append(self.visit(node=arg_node))
 
-            kwargs = dict()  # type: Dict[Union[str, Placeholder], Any]
+            kwargs = dict()  # type: dict[Any, Any]
             for keyword in node.keywords:
                 if keyword.arg is None:
                     kw = self.visit(node=keyword.value)
@@ -784,17 +770,17 @@ class Visitor(ast.NodeVisitor):
             self.recomputed_values[node] = result
             return result
 
-    def visit_Slice(self, node: ast.Slice) -> Union[slice, Placeholder]:
+    def visit_Slice(self, node: ast.Slice) -> slice | Placeholder:
         """Visit ``lower``, ``upper`` and ``step`` and recompute the node as a ``slice``."""
-        lower = None  # type: Optional[Union[int, Placeholder]]
+        lower = None  # type: int | Placeholder | None
         if node.lower is not None:
             lower = self.visit(node=node.lower)
 
-        upper = None  # type: Optional[Union[int, Placeholder]]
+        upper = None  # type: int | Placeholder | None
         if node.upper is not None:
             upper = self.visit(node=node.upper)
 
-        step = None  # type: Optional[Union[int, Placeholder]]
+        step = None  # type: int | Placeholder | None
         if node.step is not None:
             step = self.visit(node=node.step)
 
@@ -809,9 +795,7 @@ class Visitor(ast.NodeVisitor):
 
     if sys.version_info < (3, 9):
 
-        def visit_ExtSlice(
-            self, node: ast.ExtSlice
-        ) -> Union[Tuple[Any, ...], Placeholder]:
+        def visit_ExtSlice(self, node: ast.ExtSlice) -> tuple[Any, ...] | Placeholder:
             """Visit each dimension of the advanced slicing and assemble the dimensions in a tuple."""
             result = tuple(self.visit(node=dim) for dim in node.dims)
 
@@ -876,8 +860,8 @@ class Visitor(ast.NodeVisitor):
 
         code = compile(source=module_node, filename="<ast>", mode="exec")
 
-        module_locals = {}  # type: Dict[str, Any]
-        module_globals = {}  # type: Dict[str, Any]
+        module_locals = {}  # type: dict[str, Any]
+        module_globals = {}  # type: dict[str, Any]
         exec(code, module_globals, module_locals)  # pylint: disable=exec-used
 
         generated_func = module_locals[generated_function_name]
@@ -892,11 +876,12 @@ class Visitor(ast.NodeVisitor):
         )
 
         return FirstExceptionInAll(
-            result=result, inputs=cast(Tuple[Tuple[str, Any]], inputs)
+            result=result, inputs=cast(tuple[tuple[str, Any]], inputs)
         )
 
     def _execute_comprehension(
-        self, node: Union[ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp]
+        self,
+        node: ast.ListComp | ast.SetComp | ast.GeneratorExp | ast.DictComp,
     ) -> Any:
         """Compile the generator or comprehension from the node and execute the compiled code."""
         # Please see "NOTE ABOUT NAME 🠒 VALUE STACKING".
@@ -936,9 +921,9 @@ class Visitor(ast.NodeVisitor):
                     kw_defaults=[],
                     defaults=[],
                 ),
-                decorator_list=[],
                 body=[ast.Return(node)],
-            )
+                decorator_list=[],
+            )  # type: ignore
 
             module_node = ast.Module(body=[func_def_node], type_ignores=[])
 
@@ -946,8 +931,8 @@ class Visitor(ast.NodeVisitor):
 
         code = compile(source=module_node, filename="<ast>", mode="exec")
 
-        module_locals = {}  # type: Dict[str, Any]
-        module_globals = {}  # type: Dict[str, Any]
+        module_locals = {}  # type: dict[str, Any]
+        module_globals = {}  # type: dict[str, Any]
         exec(code, module_globals, module_locals)  # pylint: disable=exec-used
 
         generator_expr_func = module_locals["generator_expr"]

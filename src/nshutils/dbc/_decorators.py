@@ -5,16 +5,9 @@ from __future__ import annotations
 import inspect
 import reprlib
 import traceback
-from typing import (
-    Any,
-    Callable,
-    List,
-    Optional,
-    Type,
-    Union,
-)  # pylint: disable=unused-import
+from collections.abc import Callable
+from typing import Any
 
-# import _checkers
 from . import _checkers
 from ._globals import CallableT, ClassT, ExceptionT, aRepr
 from ._types import Contract, Invariant, InvariantCheckEvent, Snapshot
@@ -30,12 +23,13 @@ class require:  # pylint: disable=invalid-name
     def __init__(
         self,
         condition: Callable[..., Any],
-        description: Optional[str] = None,
+        description: str | None = None,
         a_repr: reprlib.Repr = aRepr,
         enabled: bool = __debug__,
-        error: Optional[
-            Union[Callable[..., ExceptionT], Type[ExceptionT], BaseException]
-        ] = None,
+        error: Callable[..., ExceptionT]
+        | type[ExceptionT]
+        | BaseException
+        | None = None,
     ) -> None:
         """
         Initialize.
@@ -64,7 +58,7 @@ class require:  # pylint: disable=invalid-name
 
         """
         self.enabled = enabled
-        self._contract = None  # type: Optional[Contract]
+        self._contract = None  # type: Contract | None
 
         if not enabled:
             return
@@ -92,7 +86,7 @@ class require:  # pylint: disable=invalid-name
                     ).format(error)
                 )
 
-        location = None  # type: Optional[str]
+        location = None  # type: str | None
         tb_stack = traceback.extract_stack(limit=2)[:1]
         if len(tb_stack) > 0:
             frame = tb_stack[0]
@@ -153,7 +147,7 @@ class snapshot:  # pylint: disable=invalid-name
     def __init__(
         self,
         capture: Callable[..., Any],
-        name: Optional[str] = None,
+        name: str | None = None,
         enabled: bool = __debug__,
     ) -> None:
         """
@@ -172,12 +166,12 @@ class snapshot:  # pylint: disable=invalid-name
             ``-OO``).
 
         """
-        self._snapshot = None  # type: Optional[Snapshot]
+        self._snapshot = None  # type: Snapshot | None
         self.enabled = enabled
 
         # Resolve the snapshot only if enabled so that no overhead is incurred
         if enabled:
-            location = None  # type: Optional[str]
+            location = None  # type: str | None
             tb_stack = traceback.extract_stack(limit=2)[:1]
             if len(tb_stack) > 0:
                 frame = tb_stack[0]
@@ -231,12 +225,11 @@ class ensure:  # pylint: disable=invalid-name
     def __init__(
         self,
         condition: Callable[..., Any],
-        description: Optional[str] = None,
+        description: str | None = None,
         a_repr: reprlib.Repr = aRepr,
         enabled: bool = __debug__,
-        error: Optional[
-            Union[Callable[..., ExceptionT], Type[ExceptionT], BaseException]
-        ] = None,
+        error: (Callable[..., ExceptionT] | type[ExceptionT] | BaseException)
+        | None = None,
     ) -> None:
         """
         Initialize.
@@ -265,7 +258,7 @@ class ensure:  # pylint: disable=invalid-name
             * An instance of ``BaseException`` that will be raised with the traceback on contract violation.
         """
         self.enabled = enabled
-        self._contract = None  # type: Optional[Contract]
+        self._contract = None  # type: Contract | None
 
         if not enabled:
             return
@@ -293,7 +286,7 @@ class ensure:  # pylint: disable=invalid-name
                     ).format(error)
                 )
 
-        location = None  # type: Optional[str]
+        location = None  # type: str | None
         tb_stack = traceback.extract_stack(limit=2)[:1]
         if len(tb_stack) > 0:
             frame = tb_stack[0]
@@ -362,12 +355,11 @@ class invariant:  # pylint: disable=invalid-name
     def __init__(
         self,
         condition: Callable[..., Any],
-        description: Optional[str] = None,
+        description: str | None = None,
         a_repr: reprlib.Repr = aRepr,
         enabled: bool = __debug__,
-        error: Optional[
-            Union[Callable[..., ExceptionT], Type[ExceptionT], BaseException]
-        ] = None,
+        error: (Callable[..., ExceptionT] | type[ExceptionT] | BaseException)
+        | None = None,
         check_on: InvariantCheckEvent = InvariantCheckEvent.CALL,
     ) -> None:
         """
@@ -405,7 +397,7 @@ class invariant:  # pylint: disable=invalid-name
 
         """
         self.enabled = enabled
-        self._invariant = None  # type: Optional[Invariant]
+        self._invariant = None  # type: Invariant | None
 
         if not enabled:
             return
@@ -433,7 +425,7 @@ class invariant:  # pylint: disable=invalid-name
                     ).format(error)
                 )
 
-        location = None  # type: Optional[str]
+        location = None  # type: str | None
         tb_stack = traceback.extract_stack(limit=2)[:1]
         if len(tb_stack) > 0:
             frame = tb_stack[0]
@@ -480,13 +472,13 @@ class invariant:  # pylint: disable=invalid-name
         )
 
         if not hasattr(cls, "__invariants__"):
-            invariants = []  # type: List[Invariant]
+            invariants = []  # type: list[Invariant]
             setattr(cls, "__invariants__", invariants)
 
-            invariants_on_call = []  # type: List[Invariant]
+            invariants_on_call = []  # type: list[Invariant]
             setattr(cls, "__invariants_on_call__", invariants_on_call)
 
-            invariants_on_setattr = []  # type: List[Invariant]
+            invariants_on_setattr = []  # type: list[Invariant]
             setattr(cls, "__invariants_on_setattr__", invariants_on_setattr)
         else:
             invariants = getattr(cls, "__invariants__")
