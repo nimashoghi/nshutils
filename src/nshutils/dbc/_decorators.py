@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import functools
 import inspect
 import reprlib
 import traceback
 from collections.abc import Callable
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, cast
 
 from . import _checkers
 from ._config import ROOT_PATH, enabled
@@ -33,6 +34,21 @@ def _resolve_enabled(
             return lambda: enabled(path=ROOT_PATH)
         case _:
             raise ValueError("You can't specify both 'enabled' and 'path'.")
+
+
+def _wrap_with_enabled_check(
+    func_orig: CallableT,
+    func_wrapped: CallableT,
+    enabled: Callable[[], bool],
+):
+    @functools.wraps(func_orig)
+    def wrapped(*args: Any, **kwargs: Any) -> Any:
+        nonlocal func_wrapped, func_orig, enabled
+        if enabled():
+            return func_wrapped(*args, **kwargs)
+        return func_orig(*args, **kwargs)
+
+    return cast(CallableT, wrapped)
 
 
 class require:  # pylint: disable=invalid-name
@@ -84,9 +100,6 @@ class require:  # pylint: disable=invalid-name
         self.enabled = enabled
         self._contract = None  # type: Contract | None
 
-        if not enabled:
-            return
-
         if error is None:
             pass
         elif isinstance(error, type):
@@ -136,8 +149,6 @@ class require:  # pylint: disable=invalid-name
         :param func: function to be wrapped
         :return: contract checker around ``func`` if no contract checker on the decorator stack, or ``func`` otherwise
         """
-        if not self.enabled:
-            return func
 
         # Find a contract checker
         contract_checker = _checkers.find_checker(func=func)
@@ -153,7 +164,7 @@ class require:  # pylint: disable=invalid-name
             checker=contract_checker, contract=self._contract
         )
 
-        return result
+        return _wrap_with_enabled_check(func, result, self.enabled)
 
 
 class snapshot:  # pylint: disable=invalid-name
@@ -195,17 +206,15 @@ class snapshot:  # pylint: disable=invalid-name
         self._snapshot = None  # type: Snapshot | None
         self.enabled = enabled
 
-        # Resolve the snapshot only if enabled so that no overhead is incurred
-        if enabled:
-            location = None  # type: str | None
-            tb_stack = traceback.extract_stack(limit=2)[:1]
-            if len(tb_stack) > 0:
-                frame = tb_stack[0]
-                location = "File {}, line {} in {}".format(
-                    frame.filename, frame.lineno, frame.name
-                )
+        location = None  # type: str | None
+        tb_stack = traceback.extract_stack(limit=2)[:1]
+        if len(tb_stack) > 0:
+            frame = tb_stack[0]
+            location = "File {}, line {} in {}".format(
+                frame.filename, frame.lineno, frame.name
+            )
 
-            self._snapshot = Snapshot(capture=capture, name=name, location=location)
+        self._snapshot = Snapshot(capture=capture, name=name, location=location)
 
     def __call__(self, func: CallableT) -> CallableT:
         """
@@ -216,9 +225,6 @@ class snapshot:  # pylint: disable=invalid-name
         :param func: function whose arguments we need to snapshot
         :return: ``func`` as given in the input
         """
-        if not self.enabled:
-            return func
-
         # Find a contract checker
         contract_checker = _checkers.find_checker(func=func)
 
@@ -229,7 +235,7 @@ class snapshot:  # pylint: disable=invalid-name
             )
 
         assert self._snapshot is not None, (
-            "Expected the enabled snapshot to have the property ``snapshot`` set."
+            "Expected the snapshot to have the property ``snapshot`` set."
         )
 
         _checkers.add_snapshot_to_checker(
@@ -288,9 +294,6 @@ class ensure:  # pylint: disable=invalid-name
         self.enabled = enabled
         self._contract = None  # type: Contract | None
 
-        if not enabled:
-            return
-
         if error is None:
             pass
         elif isinstance(error, type):
@@ -340,9 +343,6 @@ class ensure:  # pylint: disable=invalid-name
         :param func: function to be wrapped
         :return: contract checker around ``func`` if no contract checker on the decorator stack, or ``func`` otherwise
         """
-        if not self.enabled:
-            return func
-
         # Find a contract checker
         contract_checker = _checkers.find_checker(func=func)
 
@@ -357,7 +357,7 @@ class ensure:  # pylint: disable=invalid-name
             checker=contract_checker, contract=self._contract
         )
 
-        return result
+        return _wrap_with_enabled_check(func, result, self.enabled)
 
 
 class invariant:  # pylint: disable=invalid-name
@@ -429,8 +429,7 @@ class invariant:  # pylint: disable=invalid-name
         self.enabled = enabled
         self._invariant = None  # type: Invariant | None
 
-        if not enabled:
-            return
+        raise NotImplementedError("The invariant decorator is not implemented yet.")
 
         if error is None:
             pass
@@ -494,9 +493,6 @@ class invariant:  # pylint: disable=invalid-name
         add the invariant to the checker's invariants. If there is no checker in the stack, wrap the function with a
         contract checker.
         """
-        if not self.enabled:
-            return cls
-
         assert self._invariant is not None, (
             "self._contract must be set if the contract was enabled."
         )

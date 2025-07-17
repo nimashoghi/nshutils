@@ -121,9 +121,9 @@ def override(path: str, value: bool | None):
 
 
 # Optional environment bootstrap
-def _bootstrap_from_env(prefix: str = "DEBUG_") -> None:
+def _bootstrap_from_env(prefix: str = "NSHUTILS_DEBUG_") -> None:
     """
-    Support DEBUG= (root) or DEBUG_TRAINING_MASKS= style flags.
+    Support NSHUTILS_DEBUG= (root) or NSHUTILS_DEBUG_TRAINING_MASKS= style flags.
 
     "1", "true", "yes", "on" -> True
     "0", "false", "no", "off" -> False
