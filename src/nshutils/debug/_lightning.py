@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from ._config import ROOT_PATH, override
 
 try:
-    import lightning.pytorch as pl
+    import lightning.pytorch as pl  # pyright: ignore[reportMissingImports]
 
     class SanityDebugFlagCallback(pl.Callback):
         """Callback to enable debug contexts during sanity check."""
