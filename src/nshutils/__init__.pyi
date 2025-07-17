@@ -1,5 +1,5 @@
 from . import actsave as actsave
-from . import dbc as dbc
+from . import debug as debug
 from . import lovely as lovely
 from . import typecheck as typecheck
 from .actsave import ActLoad as ActLoad
