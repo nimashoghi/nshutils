@@ -34,7 +34,7 @@ def _config_for_value(value: ValueType) -> DebugConfig | object:
 
 
 def _default_enabled():
-    return __debug__
+    return bool(int(os.environ.get("NSHUTILS_DEBUG", "0")))
 
 
 class _DebugNode:
@@ -133,26 +133,3 @@ def override(value: ValueType, path: str = ROOT_PATH):
     """Temporarily override path within the current async context."""
     with node(path).override(value):
         yield
-
-
-# Optional environment bootstrap
-def _bootstrap_from_env(prefix: str = "NSHUTILS_DEBUG_") -> None:
-    """
-    Support NSHUTILS_DEBUG= (root) or NSHUTILS_DEBUG_TRAINING_MASKS= style flags.
-
-    "1", "true", "yes", "on" -> True
-    "0", "false", "no", "off" -> False
-    """
-    truthy = {"1", "true", "yes", "on"}
-    falsy = {"0", "false", "no", "off"}
-    for key, raw in os.environ.items():
-        if not key.startswith(prefix):
-            continue
-        path = key[len(prefix) :].lower().replace("_", ".")  # env uses '_' separator
-        if raw.lower() in truthy:
-            node(path).set(True)
-        elif raw.lower() in falsy:
-            node(path).set(False)
-
-
-_bootstrap_from_env()
