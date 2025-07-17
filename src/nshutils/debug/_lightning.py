@@ -23,7 +23,7 @@ try:
         ):
             """Enable debug contexts during sanity check."""
             for path in self._paths:
-                context = override(path, True)
+                context = override({"enabled": True}, path=path)
                 self._contexts.append(context)
 
         def on_sanity_check_end(
