@@ -6,7 +6,7 @@ import importlib.util
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Any, Generic, Optional, cast
+from typing import Generic, Optional, cast
 
 from typing_extensions import (
     ParamSpec,
@@ -114,6 +114,9 @@ class lovely_repr(Generic[TArray]):
         return wrapper
 
 
+_active_patches: list[lovely_patch] = []
+
+
 class lovely_patch(contextlib.AbstractContextManager["lovely_patch"], ABC):
     def __init__(self, quiet: bool = False):
         self._patched = False
@@ -132,6 +135,14 @@ class lovely_patch(contextlib.AbstractContextManager["lovely_patch"], ABC):
     def unpatch(self):
         """Subclasses must implement this."""
 
+    def _add_to_global_active_patches(self):
+        global _active_patches
+        _active_patches = [*filter(lambda p: p is not self, _active_patches), self]
+
+    def _remove_from_global_active_patches(self):
+        global _active_patches
+        _active_patches = [*filter(lambda p: p is not self, _active_patches)]
+
     @override
     def __enter__(self):
         if self._patched:
@@ -146,6 +157,7 @@ class lovely_patch(contextlib.AbstractContextManager["lovely_patch"], ABC):
 
         self.patch()
         self._patched = True
+        self._add_to_global_active_patches()
         return self
 
     @override
@@ -155,7 +167,21 @@ class lovely_patch(contextlib.AbstractContextManager["lovely_patch"], ABC):
 
         self.unpatch()
         self._patched = False
+        self._remove_from_global_active_patches()
 
     def close(self):
         """Explicitly clean up the resource."""
         self.__exit__(None, None, None)
+
+
+def active_patches() -> list[lovely_patch]:
+    """Get a list of all active patches."""
+    return _active_patches
+
+
+def monkey_unpatch() -> None:
+    """Unpatch all active patches."""
+    global _active_patches
+    for patch in _active_patches:
+        patch.close()
+    _active_patches = []
