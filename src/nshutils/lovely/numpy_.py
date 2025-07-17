@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import logging
-
 import numpy as np
 from typing_extensions import override
 
@@ -85,7 +83,7 @@ class numpy_monkey_patch(lovely_patch):
         if _np_ge_2():
             self.original_options = np.get_printoptions()
             np.set_printoptions(override_repr=numpy_repr)
-            logging.info(
+            self._log(
                 f"Numpy monkey patching: using {numpy_repr.__name__} for numpy arrays. "
                 f"{np.get_printoptions()=}"
             )
@@ -94,7 +92,7 @@ class numpy_monkey_patch(lovely_patch):
             # so no state needs to be saved.
             np.set_string_function(numpy_repr, True)  # pyright: ignore[reportAttributeAccessIssue]
             np.set_string_function(numpy_repr, False)  # pyright: ignore[reportAttributeAccessIssue]
-            logging.info(
+            self._log(
                 f"Numpy monkey patching: using {numpy_repr.__name__} for numpy arrays. "
                 f"{np.get_printoptions()=}"
             )
@@ -103,14 +101,14 @@ class numpy_monkey_patch(lovely_patch):
     def unpatch(self):
         if _np_ge_2():
             np.set_printoptions(**self.original_options)
-            logging.info(
+            self._log(
                 f"Numpy unmonkey patching: using {numpy_repr.__name__} for numpy arrays. "
                 f"{np.get_printoptions()=}"
             )
         else:
             np.set_string_function(None, True)  # pyright: ignore[reportAttributeAccessIssue]
             np.set_string_function(None, False)  # pyright: ignore[reportAttributeAccessIssue]
-            logging.info(
+            self._log(
                 f"Numpy unmonkey patching: using {numpy_repr.__name__} for numpy arrays. "
                 f"{np.get_printoptions()=}"
             )

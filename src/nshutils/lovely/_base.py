@@ -115,8 +115,9 @@ class lovely_repr(Generic[TArray]):
 
 
 class lovely_patch(contextlib.AbstractContextManager["lovely_patch"], ABC):
-    def __init__(self):
+    def __init__(self, quiet: bool = False):
         self._patched = False
+        self._log = log.debug if quiet else log.info
         self.__enter__()
 
     def dependencies(self) -> list[str]:
