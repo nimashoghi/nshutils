@@ -29,7 +29,11 @@ def _find_deps() -> list[Library]:
 
 
 class monkey_patch(lovely_patch):
-    def __init__(self, libraries: list[Library] | Literal["auto"] = "auto"):
+    def __init__(
+        self,
+        libraries: list[Library] | Literal["auto"] = "auto",
+        quiet: bool = False,
+    ):
         if libraries == "auto":
             self.libraries = _find_deps()
         else:
@@ -42,7 +46,8 @@ class monkey_patch(lovely_patch):
             )
 
         self.stack = contextlib.ExitStack()
-        super().__init__()
+        self._quiet = quiet
+        super().__init__(quiet=quiet)
 
     @override
     def patch(self):
@@ -50,19 +55,19 @@ class monkey_patch(lovely_patch):
             if library == "torch":
                 from .torch_ import torch_monkey_patch
 
-                self.stack.enter_context(torch_monkey_patch())
+                self.stack.enter_context(torch_monkey_patch(quiet=self._quiet))
             elif library == "jax":
                 from .jax_ import jax_monkey_patch
 
-                self.stack.enter_context(jax_monkey_patch())
+                self.stack.enter_context(jax_monkey_patch(quiet=self._quiet))
             elif library == "numpy":
                 from .numpy_ import numpy_monkey_patch
 
-                self.stack.enter_context(numpy_monkey_patch())
+                self.stack.enter_context(numpy_monkey_patch(quiet=self._quiet))
             else:
                 assert_never(library)
 
-        log.info(
+        self._log(
             f"Monkey patched libraries: {', '.join(self.libraries)}. "
             "You can now use the lovely functions with these libraries."
         )
@@ -70,7 +75,7 @@ class monkey_patch(lovely_patch):
     @override
     def unpatch(self):
         self.stack.close()
-        log.info(
+        self._log(
             f"Unmonkey patched libraries: {', '.join(self.libraries)}. "
             "You can now use the lovely functions with these libraries."
         )
