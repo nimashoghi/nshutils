@@ -6,11 +6,33 @@ import inspect
 import reprlib
 import traceback
 from collections.abc import Callable
-from typing import Any
+from typing import Any, TypeAlias
 
 from . import _checkers
+from ._config import ROOT_PATH, enabled
 from ._globals import CallableT, ClassT, ExceptionT, aRepr
 from ._types import Contract, Invariant, InvariantCheckEvent, Snapshot
+
+EnabledInputType: TypeAlias = bool | Callable[[], bool]
+ENABLED_DEFAULT = lambda: enabled(path=ROOT_PATH)
+
+
+def _resolve_enabled(
+    enabled_input: EnabledInputType | None = None,
+    path_input: str | None = None,
+) -> Callable[[], bool]:
+    # If enabled is not set, we use `enabled(path)`.
+    # If path is also not set, we use `enabled(ROOT_PATH)`.
+    # If both are set, we should throw an error.
+    match enabled_input, path_input:
+        case None, None:
+            return ENABLED_DEFAULT
+        case None, _:
+            return lambda: enabled(path=path_input)
+        case _, None:
+            return lambda: enabled(path=ROOT_PATH)
+        case _:
+            raise ValueError("You can't specify both 'enabled' and 'path'.")
 
 
 class require:  # pylint: disable=invalid-name
@@ -25,7 +47,8 @@ class require:  # pylint: disable=invalid-name
         condition: Callable[..., Any],
         description: str | None = None,
         a_repr: reprlib.Repr = aRepr,
-        enabled: bool = __debug__,
+        enabled: EnabledInputType | None = None,
+        path: str | None = None,
         error: Callable[..., ExceptionT]
         | type[ExceptionT]
         | BaseException
@@ -57,6 +80,7 @@ class require:  # pylint: disable=invalid-name
             * An instance of ``BaseException`` that will be raised with the traceback on contract violation.
 
         """
+        enabled = _resolve_enabled(enabled, path)
         self.enabled = enabled
         self._contract = None  # type: Contract | None
 
@@ -148,7 +172,8 @@ class snapshot:  # pylint: disable=invalid-name
         self,
         capture: Callable[..., Any],
         name: str | None = None,
-        enabled: bool = __debug__,
+        enabled: EnabledInputType | None = None,
+        path: str | None = None,
     ) -> None:
         """
         Initialize.
@@ -166,6 +191,7 @@ class snapshot:  # pylint: disable=invalid-name
             ``-OO``).
 
         """
+        enabled = _resolve_enabled(enabled, path)
         self._snapshot = None  # type: Snapshot | None
         self.enabled = enabled
 
@@ -227,7 +253,8 @@ class ensure:  # pylint: disable=invalid-name
         condition: Callable[..., Any],
         description: str | None = None,
         a_repr: reprlib.Repr = aRepr,
-        enabled: bool = __debug__,
+        enabled: EnabledInputType | None = None,
+        path: str | None = None,
         error: (Callable[..., ExceptionT] | type[ExceptionT] | BaseException)
         | None = None,
     ) -> None:
@@ -257,6 +284,7 @@ class ensure:  # pylint: disable=invalid-name
               on contract violation.
             * An instance of ``BaseException`` that will be raised with the traceback on contract violation.
         """
+        enabled = _resolve_enabled(enabled, path)
         self.enabled = enabled
         self._contract = None  # type: Contract | None
 
@@ -357,7 +385,8 @@ class invariant:  # pylint: disable=invalid-name
         condition: Callable[..., Any],
         description: str | None = None,
         a_repr: reprlib.Repr = aRepr,
-        enabled: bool = __debug__,
+        enabled: EnabledInputType | None = None,
+        path: str | None = None,
         error: (Callable[..., ExceptionT] | type[ExceptionT] | BaseException)
         | None = None,
         check_on: InvariantCheckEvent = InvariantCheckEvent.CALL,
@@ -396,6 +425,7 @@ class invariant:  # pylint: disable=invalid-name
         :return:
 
         """
+        enabled = _resolve_enabled(enabled, path)
         self.enabled = enabled
         self._invariant = None  # type: Invariant | None
 
