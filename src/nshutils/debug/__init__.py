@@ -6,6 +6,7 @@ from ._config import DebugConfig as DebugConfig
 from ._config import config as config
 from ._config import enabled as enabled
 from ._config import override as override
+from ._config import set as set
 from ._decorators import ensure as ensure
 from ._decorators import ensure as post
 from ._decorators import require as pre

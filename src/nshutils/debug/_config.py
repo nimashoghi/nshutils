@@ -133,3 +133,8 @@ def override(value: ValueType, path: str = ROOT_PATH):
     """Temporarily override path within the current async context."""
     with node(path).override(value):
         yield
+
+
+def set(value: ValueType, path: str = ROOT_PATH) -> None:
+    """Set value for path."""
+    node(path).set(value)
