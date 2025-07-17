@@ -46,6 +46,7 @@ from jaxtyping import UInt16 as UInt16
 from jaxtyping import UInt32 as UInt32
 from jaxtyping import UInt64 as UInt64
 from jaxtyping import jaxtyped
+from jaxtyping import print_bindings as print_bindings
 from jaxtyping._storage import get_shape_memo, shape_str
 from typing_extensions import TypeVar
 
