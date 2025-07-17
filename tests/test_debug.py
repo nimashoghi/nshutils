@@ -3,10 +3,11 @@ from __future__ import annotations
 import pytest
 
 import nshutils.debug as debug
+from nshutils.debug._config import _default_enabled
 
 
 def test_debug_enabled():
-    assert debug.enabled() is __debug__
+    assert debug.enabled() is _default_enabled()
 
 
 def test_override_root():
