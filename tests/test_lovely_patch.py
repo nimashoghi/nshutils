@@ -6,7 +6,7 @@ import weakref
 import numpy as np
 import pytest
 
-from nshutils.lovely import monkey_patch
+from nshutils.lovely import monkey_patch, monkey_unpatch
 
 
 @pytest.fixture(autouse=True)
@@ -49,6 +49,9 @@ def test_patch_leak():
     patch_ref = weakref.ref(patch)
 
     # Delete the patch object and trigger garbage collection
+    # NOTE: Here, we also need to remove the patch from the global active patches
+    # so that it actually gets garbage collected.
+    patch._remove_from_global_active_patches()
     del patch
     gc.collect()
 
@@ -84,3 +87,22 @@ def test_patch_close():
 
     # Check that the repr has been restored
     assert np.array_repr(np.array([1])) == original_repr
+
+
+def test_global_unpatch():
+    # Store the original repr
+    original_repr = np.array_repr(np.array([1]))
+
+    # Apply the patch
+    patch = monkey_patch(["numpy"])
+    assert patch._patched, "Patch should be active after monkey_patch"
+    assert np.array_repr(np.array([1])) != original_repr
+
+    # Unpatch globally
+    monkey_unpatch()
+
+    # Check that the repr has been restored
+    assert np.array_repr(np.array([1])) == original_repr
+
+    # Technically, patch._patched should be False after unpatching.
+    assert not patch._patched, "Patch should be unpatched globally."
