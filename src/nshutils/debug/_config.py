@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import os
-from collections.abc import MutableMapping
+from collections.abc import Mapping, MutableMapping
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import Final, TypedDict
+from typing import Final, TypeAlias, TypedDict
 
-from typing_extensions import Self
+from typing_extensions import Self, assert_never
 from typing_extensions import override as override_
 
 
@@ -17,10 +17,20 @@ class DebugConfig(TypedDict, total=False):
 _SENTINEL: Final = object()
 ROOT_PATH: Final = ""
 
+ValueType: TypeAlias = DebugConfig | bool | None
 
-def _config_for_value(value: bool | None) -> DebugConfig | object:
+
+def _config_for_value(value: ValueType) -> DebugConfig | object:
     """Convert a bool | None value to either a DebugConfig or _SENTINEL."""
-    return _SENTINEL if value is None else DebugConfig(enabled=value)
+    match value:
+        case None:
+            return _SENTINEL
+        case bool():
+            return DebugConfig(enabled=value)
+        case Mapping():
+            return value
+        case _:
+            assert_never(value)
 
 
 def _default_enabled():
@@ -71,20 +81,25 @@ class _DebugNode:
             )
         return val  # type: ignore[return-value]
 
+    @property
+    def config(self) -> DebugConfig:
+        """Return the effective configuration for this node."""
+        return self._config()
+
     def __bool__(self) -> bool:
         """Return effective enabled flag."""
-        return self._config().get("enabled", False)
+        return self.config.get("enabled", False)
 
     def enabled(self) -> bool:
         """Return effective enabled flag."""
         return bool(self)
 
-    def set(self, value: bool | None) -> None:
+    def set(self, value: ValueType) -> None:
         """Set value. None means inherit parent again."""
         self._var.set(_config_for_value(value))
 
     @contextmanager
-    def override(self, value: bool | None):
+    def override(self, value: ValueType):
         """Temporarily override value within current context."""
         token = self._var.set(_config_for_value(value))
         try:
@@ -103,9 +118,9 @@ def node(path: str = ROOT_PATH) -> _DebugNode:
     return _DebugNode.node(path)
 
 
-def debug(path: str = ROOT_PATH) -> bool:
-    """Cheap functional check: if debug("foo.bar"):"""
-    return enabled(path)
+def config(path: str = ROOT_PATH):
+    """Return the effective configuration for path."""
+    return node(path).config
 
 
 def enabled(path: str = ROOT_PATH) -> bool:
@@ -114,7 +129,7 @@ def enabled(path: str = ROOT_PATH) -> bool:
 
 
 @contextmanager
-def override(path: str, value: bool | None):
+def override(value: ValueType, path: str = ROOT_PATH):
     """Temporarily override path within the current async context."""
     with node(path).override(value):
         yield
