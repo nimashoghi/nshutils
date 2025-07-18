@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pprint
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from functools import cached_property
 from logging import getLogger
@@ -77,7 +78,7 @@ class LoadedActivation:
         return f"<LoadedActivation {self.name} ({self.num_activations} activations)>"
 
 
-class ActLoad:
+class ActLoad(Mapping[str, LoadedActivation]):
     @classmethod
     def all_versions(cls, dir: str | Path):
         dir = Path(dir)
@@ -146,13 +147,16 @@ class ActLoad:
 
         return {p.name: LoadedActivation(self._dir, p.name) for p in dirs}
 
-    def __iter__(self):
-        return iter(self.activations.values())
+    @override
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.activations)
 
-    def __getitem__(self, item: str):
+    @override
+    def __getitem__(self, item: str) -> LoadedActivation:
         return self.activations[item]
 
-    def __len__(self):
+    @override
+    def __len__(self) -> int:
         return len(self.activations)
 
     def _ipython_key_completions_(self):
@@ -173,9 +177,6 @@ class ActLoad:
             return f"ActLoad(prefix='{prefix_str}', {acts_str})"
         else:
             return f"ActLoad({acts_str})"
-
-    def get(self, name: str, /, default: T) -> LoadedActivation | T:
-        return self.activations.get(name, default)
 
     def filter_by_prefix(self, prefix: str) -> ActLoad:
         """Create a filtered view of activations that match the given prefix.
