@@ -2,14 +2,18 @@ from __future__ import annotations
 
 import pprint
 from collections.abc import Iterator, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import cached_property
 from logging import getLogger
 from pathlib import Path
-from typing import cast, overload
+from typing import TYPE_CHECKING, cast, overload
 
 import numpy as np
 from typing_extensions import TypeVar, override
+
+if TYPE_CHECKING:
+    import treescope.renderers
+
 
 log = getLogger(__name__)
 
@@ -22,6 +26,8 @@ class LoadedActivation:
     name: str
     num_activations: int = field(init=False)
     activation_files: list[Path] = field(init=False, repr=False)
+
+    _lazy_repr: bool = field(default=False, repr=False, init=False)
 
     def __post_init__(self):
         if not self.activation_dir.exists():
@@ -76,6 +82,33 @@ class LoadedActivation:
     @override
     def __repr__(self):
         return f"<LoadedActivation {self.name} ({self.num_activations} activations)>"
+
+    def __treescope_repr__(
+        self,
+        path: str,
+        subtree_renderer: "treescope.renderers.TreescopeSubtreeRenderer",
+    ):
+        if self._lazy_repr:
+            return NotImplemented
+
+        try:
+            import treescope
+            import treescope.repr_lib
+        except ImportError:
+            raise ImportError(
+                "treescope is not installed but __treescope_repr__ is called. "
+                "Please install treescope to use this feature."
+            )
+
+        return treescope.repr_lib.render_list_wrapper(
+            object_type=type(self),
+            wrapped_sequence=self.all_activations(),
+            path=path,
+            subtree_renderer=subtree_renderer,
+            # Pass `roundtrippable=True` only if you can rebuild your object by
+            # calling `__init__` with these attributes!
+            roundtrippable=False,
+        )
 
 
 class ActLoad(Mapping[str, LoadedActivation]):
@@ -211,6 +244,33 @@ class ActLoad(Mapping[str, LoadedActivation]):
             _base_activations=filtered_activations,
             _prefix_chain=new_prefix_chain,
             dir=self._dir,
+        )
+
+    def __treescope_repr__(
+        self,
+        path: str,
+        subtree_renderer: "treescope.renderers.TreescopeSubtreeRenderer",
+    ):
+        try:
+            import treescope.repr_lib
+        except ImportError:
+            raise ImportError(
+                "treescope is not installed but __treescope_repr__ is called. "
+                "Please install treescope to use this feature."
+            )
+
+        wrapped_dict: dict[str, LoadedActivation] = {}
+        for name, activation in self.items():
+            wrapped_dict[name] = replace(activation, _lazy_repr=True)
+
+        return treescope.repr_lib.render_dictionary_wrapper(
+            object_type=type(self),
+            wrapped_dict=wrapped_dict,
+            path=path,
+            subtree_renderer=subtree_renderer,
+            # Pass `roundtrippable=True` only if you can rebuild your object by
+            # calling `__init__` with these attributes!
+            roundtrippable=False,
         )
 
 
