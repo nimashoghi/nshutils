@@ -52,8 +52,10 @@ def _dtype_str(array: np.ndarray) -> str:
 
 @lovely_repr(dependencies=["numpy"])
 def numpy_repr(array: np.ndarray) -> LovelyStats | None:
-    # For dtypes like `object` or `str`, we let the fallback repr handle it
-    if not np.issubdtype(array.dtype, np.number):
+    # For dtypes like `object` or `str`, we let the fallback repr handle it (allow bool)
+    if not (
+        np.issubdtype(array.dtype, np.number) or np.issubdtype(array.dtype, np.bool_)
+    ):
         return None
 
     return {
