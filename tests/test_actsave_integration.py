@@ -210,7 +210,7 @@ class TestActLoadPrefixFiltering:
         encoder_loader = loader.filter_by_prefix("encoder.")
 
         # Collect all activations through iteration
-        activations_list = list(encoder_loader)
+        activations_list = list(encoder_loader.values())
         assert len(activations_list) == 4  # 2 layers × 2 types each
 
         # Verify all are LoadedActivation instances
