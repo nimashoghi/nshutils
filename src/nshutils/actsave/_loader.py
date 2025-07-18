@@ -27,7 +27,7 @@ class LoadedActivation:
     num_activations: int = field(init=False)
     activation_files: list[Path] = field(init=False, repr=False)
 
-    _lazy_repr: bool = field(default=False, repr=False, init=False)
+    _lazy_repr: bool = field(default=False, repr=False)
 
     def __post_init__(self):
         if not self.activation_dir.exists():
