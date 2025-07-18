@@ -369,7 +369,3 @@ def attention(
 A style guide is a _means_ to velocity, not bureaucracy. When a rule blocks legitimate progress, discuss and evolve the guide. Document approved deviations so we learn as a team.
 
 > **If it’s not in CI, it’s not a rule.** Keep tooling current with the guide.
-
----
-
-**Questions?** Bring them up in code review or open a “style‑decision” discussion in the repo.
