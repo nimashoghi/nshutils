@@ -4,6 +4,7 @@ from . import lovely as lovely
 from . import typecheck as typecheck
 from .actsave import ActLoad as ActLoad
 from .actsave import ActSave as ActSave
+from .actsave import act_saver as act_saver
 from .collections import apply_to_collection as apply_to_collection
 from .display import display as display
 from .logging import init_python_logging as init_python_logging
