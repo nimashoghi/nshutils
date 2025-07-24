@@ -182,8 +182,6 @@ class _Saver:
         self,
         save_dir: Path,
         prefixes_fn: Callable[[], list[str]],
-        *,
-        filters: list[str] | None = None,
     ):
         # Create a directory under `save_dir` by autoincrementing
         # (i.e., every activation save context, we create a new directory)
@@ -199,7 +197,6 @@ class _Saver:
         self._save_dir.mkdir(exist_ok=False)
 
         self._prefixes_fn = prefixes_fn
-        self._filters = filters
 
     def _save_activation(self, activation: Activation):
         # If the activation value is `None`, we skip it.
@@ -220,24 +217,22 @@ class _Saver:
         self,
         acts: dict[str, ValueOrLambda] | None = None,
         /,
+        _filters: list[str] | None = None,
         **kwargs: ValueOrLambda,
     ):
         kwargs.update(acts or {})
 
-        # Build activations
         activations = Activation.from_dict(kwargs)
 
         for activation in activations:
-            # Build the full activation name including prefixes for filtering
             full_name = ".".join(self._prefixes_fn() + [activation.name])
 
-            # Make sure name matches at least one filter if filters are specified
-            if self._filters is not None and all(
-                not fnmatch.fnmatch(full_name, f) for f in self._filters
+            # Apply filters supplied at call-time
+            if _filters is not None and all(
+                not fnmatch.fnmatch(full_name, f) for f in _filters
             ):
                 continue
 
-            # Save the current activation
             self._save_activation(activation)
 
         del activations
@@ -286,7 +281,7 @@ class ActSaveProvider:
             )
         else:
             log.info(f"ActSave enabled. Saving to {save_dir}")
-        self._saver = _Saver(save_dir, lambda: self._prefixes, filters=self._filters)
+        self._saver = _Saver(save_dir, lambda: self._prefixes)
 
     def disable(self):
         """
@@ -310,9 +305,6 @@ class ActSaveProvider:
                 pattern will be saved. If None, all activations are saved.
         """
         self._filters = filters
-        if self._saver is not None:
-            # Update the existing saver's filters
-            self._saver._filters = filters
 
     @property
     def filters(self) -> list[str] | None:
@@ -490,7 +482,9 @@ class ActSaveProvider:
 
         if acts is not None and callable(acts):
             acts = acts()
-        self._saver.save(acts, **kwargs)
+
+        # Pass the current filters on every save
+        self._saver.save(acts, _filters=self._filters, **kwargs)
 
     save = __call__
 
