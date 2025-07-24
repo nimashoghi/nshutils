@@ -69,6 +69,102 @@ my_model_forward(x)
 
 This will save the `x` tensor to disk under the `encoder` prefix.
 
+#### Activation Filtering
+
+`ActSave` supports filtering to selectively save only certain activations based on fnmatch patterns. This is useful for reducing storage space and focusing on specific model components:
+
+```python
+from nshutils import ActSave
+
+# Only save activations matching "layer*" or "attention*" patterns
+filters = ["layer*", "attention*"]
+
+with ActSave.enabled(save_dir="path/to/activations", filters=filters):
+    # These will be saved (match filters)
+    ActSave(
+        layer1_output=x1,
+        layer2_hidden=x2,
+        attention_weights=x3
+    )
+
+    # These will NOT be saved (don't match filters)
+    ActSave(
+        decoder_output=x4,
+        embedding_vector=x5
+    )
+```
+
+The filtering patterns support standard Unix shell-style wildcards:
+
+- `*` matches everything
+- `?` matches any single character
+- `[seq]` matches any character in seq
+- `[!seq]` matches any character not in seq
+
+##### Contextual Filtering
+
+Filters work with context prefixes, allowing you to save activations from specific model components:
+
+```python
+# Only save activations from encoder layers
+filters = ["encoder.*"]
+
+with ActSave.enabled(save_dir="path/to/activations", filters=filters):
+    # Decoder context - these won't be saved
+    with ActSave.context("decoder"):
+        ActSave(layer1_output=x1, attention=x2)
+
+    # Encoder context - these will be saved
+    with ActSave.context("encoder"):
+        ActSave(layer1_output=x3, attention=x4)  # Saved as "encoder.layer1_output", "encoder.attention"
+```
+
+##### Dynamic Filter Updates
+
+You can update filters during runtime:
+
+```python
+ActSave.enable(save_dir="path/to/activations")
+
+# Initially no filters - all activations saved
+ActSave(layer1_output=x1, attention_weights=x2)
+
+# Update to only save layer outputs
+ActSave.set_filters(["layer*"])
+ActSave(layer2_output=x3, decoder_output=x4)  # Only layer2_output saved
+
+# Check current filters
+current_filters = ActSave.filters  # Returns ["layer*"]
+
+# Clear filters
+ActSave.set_filters(None)
+```
+
+##### Environment Variable Configuration
+
+You can configure ActSave and filtering through environment variables:
+
+```bash
+# Enable ActSave with default temp directory
+export ACTSAVE=1
+
+# Enable ActSave with specific directory
+export ACTSAVE="/path/to/activations"
+
+# Set filters (comma-separated patterns)
+export ACTSAVE_FILTERS="layer*,attention*,encoder.*"
+
+# Combine both
+export ACTSAVE="/path/to/activations"
+export ACTSAVE_FILTERS="layer*,attention*"
+```
+
+The `ACTSAVE_FILTERS` environment variable supports:
+
+- **Comma-separated patterns**: `"layer*,attention*,decoder.*"`
+- **Whitespace handling**: Extra spaces around commas are automatically trimmed
+- **Empty values**: Empty string or only commas/spaces result in no filtering
+
 To load activations, use the `ActLoad` class:
 
 ```python

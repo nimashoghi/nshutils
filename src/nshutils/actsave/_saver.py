@@ -228,9 +228,12 @@ class _Saver:
         activations = Activation.from_dict(kwargs)
 
         for activation in activations:
+            # Build the full activation name including prefixes for filtering
+            full_name = ".".join(self._prefixes_fn() + [activation.name])
+
             # Make sure name matches at least one filter if filters are specified
             if self._filters is not None and all(
-                not fnmatch.fnmatch(activation.name, f) for f in self._filters
+                not fnmatch.fnmatch(full_name, f) for f in self._filters
             ):
                 continue
 
@@ -244,6 +247,7 @@ class ActSaveProvider:
     _saver: _Saver | None = None
     _prefixes: list[str] = []
     _disable_count: int = 0
+    _filters: list[str] | None = None
 
     @property
     def is_initialized(self) -> bool:
@@ -255,16 +259,25 @@ class ActSaveProvider:
         """Returns True if ActSave is currently active and will save activations."""
         return self.is_initialized and self._disable_count == 0
 
-    def enable(self, save_dir: Path | None = None):
+    def enable(self, save_dir: Path | None = None, *, filters: list[str] | None = None):
         """
         Initializes the saver with the given configuration and save directory.
 
         Args:
             save_dir (Path): The directory where the saved files will be stored.
+            filters (list[str] | None): Optional list of fnmatch patterns to filter
+                which activations to save. Only activations matching at least one
+                pattern will be saved.
         """
         if self._saver is not None:
             log.warning("ActSave is already enabled")
+            # Update filters if provided, even when already enabled
+            if filters is not None:
+                self.set_filters(filters)
             return
+
+        # Store filters for this session
+        self._filters = filters
 
         if save_dir is None:
             save_dir = Path(tempfile.gettempdir()) / f"actsave-{uuid7str()}"
@@ -273,7 +286,7 @@ class ActSaveProvider:
             )
         else:
             log.info(f"ActSave enabled. Saving to {save_dir}")
-        self._saver = _Saver(save_dir, lambda: self._prefixes)
+        self._saver = _Saver(save_dir, lambda: self._prefixes, filters=self._filters)
 
     def disable(self):
         """
@@ -285,21 +298,55 @@ class ActSaveProvider:
 
         del self._saver
         self._saver = None
+        self._filters = None
+
+    def set_filters(self, filters: list[str] | None):
+        """
+        Sets the activation name filters for the current session.
+
+        Args:
+            filters (list[str] | None): List of fnmatch patterns to filter
+                which activations to save. Only activations matching at least one
+                pattern will be saved. If None, all activations are saved.
+        """
+        self._filters = filters
+        if self._saver is not None:
+            # Update the existing saver's filters
+            self._saver._filters = filters
+
+    @property
+    def filters(self) -> list[str] | None:
+        """Returns the current activation name filters."""
+        return self._filters
 
     @contextlib.contextmanager
-    def enabled(self, save_dir: Path | None = None):
+    def enabled(
+        self, save_dir: Path | None = None, *, filters: list[str] | None = None
+    ):
         """
         Context manager that enables the actsave functionality with the specified configuration.
 
         Args:
             save_dir (Path): The directory where the saved files will be stored.
+            filters (list[str] | None): Optional list of fnmatch patterns to filter
+                which activations to save. Only activations matching at least one
+                pattern will be saved.
         """
         if self._saver is not None:
-            log.warning("ActSave is already enabled")
-            yield
+            # ActSave is already enabled - temporarily modify filters if requested
+            original_filters = self._filters
+            if filters is not None:
+                self.set_filters(filters)
+
+            try:
+                yield
+            finally:
+                # Restore original filters
+                if filters is not None:
+                    self.set_filters(original_filters)
             return
 
-        self.enable(save_dir)
+        self.enable(save_dir, filters=filters)
         try:
             yield
         finally:
@@ -312,18 +359,28 @@ class ActSaveProvider:
         self._saver = None
         self._prefixes = []
         self._disable_count = 0
+        self._filters = None
 
         # Check for environment variable `ACTSAVE` to automatically enable saving.
         # If set to "1" or "true" (case-insensitive), activations are saved to a temporary directory.
         # If set to a path, activations are saved to that path.
+        env_filters = None
+        if filters_env_var := os.environ.get("ACTSAVE_FILTERS"):
+            log.info(f"`ACTSAVE_FILTERS={filters_env_var}` detected, parsing filters.")
+            # Parse comma-separated filters, stripping whitespace
+            env_filters = [f.strip() for f in filters_env_var.split(",") if f.strip()]
+            if not env_filters:
+                log.warning("ACTSAVE_FILTERS was set but contained no valid filters.")
+                env_filters = None
+
         if env_var := os.environ.get("ACTSAVE"):
             log.info(
                 f"`ACTSAVE={env_var}` detected, attempting to auto-enable activation saving."
             )
             if env_var.lower() in ("1", "true"):
-                self.enable()
+                self.enable(filters=env_filters)
             else:
-                self.enable(Path(env_var))
+                self.enable(Path(env_var), filters=env_filters)
 
     @contextlib.contextmanager
     def disabled(self, condition: bool | Callable[[], bool] = True):
