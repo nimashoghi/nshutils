@@ -364,6 +364,10 @@ class ActSaveProvider:
             if not env_filters:
                 log.warning("ACTSAVE_FILTERS was set but contained no valid filters.")
                 env_filters = None
+            else:
+                log.warning(
+                    f"ACTSAVE_FILTERS set to {env_filters}, only saving activations matching these patterns."
+                )
 
         if env_var := os.environ.get("ACTSAVE"):
             log.info(
