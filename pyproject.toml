@@ -14,7 +14,6 @@ dependencies = [
     "beartype; python_version >= '3.10'",
     "wadler-lindig; python_version >= '3.10'",
     "uuid7",
-    "asttokens >= 2, < 3",
 ]
 
 [project.optional-dependencies]
