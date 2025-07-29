@@ -1,5 +1,14 @@
 # Python Style Guide
 
+This codebase uses Poetry for dependency management and packaging. As such:
+
+- All dependencies must be declared in `pyproject.toml`.
+    - New dependencies should be added with `poetry add <package>`.
+        - We generally prefer to use the most permissive version constraints, so we default to `poetry add "<package>==*"`.
+- All development dependencies should be declared in `pyproject.toml` under the `[tool.poetry.dev-dependencies]` section.
+- All dependencies should be installed with `poetry install [--all-extras]`.
+- All commands that require the virtual environment should be run with `poetry run <command>`.
+
 **Audience:** Senior & near‑senior Python engineers working in machine learning, data science, and scientific computing (PyTorch, JAX, NumPy, SciPy, pandas, matplotlib, etc.).
 
 **Goal:** High‑signal, enforceable rules that make code _readable, type‑safe, reproducible, and production ready_ without slowing research velocity.
