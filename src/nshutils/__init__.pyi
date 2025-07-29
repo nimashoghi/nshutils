@@ -1,4 +1,5 @@
 from . import actsave as actsave
+from . import config as config
 from . import debug as debug
 from . import lovely as lovely
 from . import typecheck as typecheck
@@ -6,6 +7,10 @@ from .actsave import ActLoad as ActLoad
 from .actsave import ActSave as ActSave
 from .actsave import act_saver as act_saver
 from .collections import apply_to_collection as apply_to_collection
+from .config import debug_enabled as debug_enabled
+from .config import debug_override as debug_override
+from .config import typecheck_enabled as typecheck_enabled
+from .config import typecheck_override as typecheck_override
 from .display import display as display
 from .logging import init_python_logging as init_python_logging
 from .logging import setup_logging as setup_logging

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import os
+
 import nshutils.debug as debug
-from nshutils.debug._config import _default_enabled
 
 
 def test_debug_enabled():
-    assert debug.enabled() is _default_enabled()
+    # Test default state (should match NSHUTILS_DEBUG environment variable)
+    expected = bool(int(os.environ.get("NSHUTILS_DEBUG", "0")))
+    assert debug.enabled() is expected
 
 
 def test_override_root():

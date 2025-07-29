@@ -5,7 +5,10 @@ import os
 import pytest
 
 import nshutils.debug as debug
-from nshutils.typecheck import DISABLE_ENV_KEY, ENABLE_ENV_KEY, _should_typecheck
+from nshutils.typecheck import _should_typecheck
+
+ENABLE_ENV_KEY = "NSHUTILS_TYPECHECK"
+DISABLE_ENV_KEY = "NSHUTILS_DISABLE_TYPECHECKING"
 
 
 class TestTypecheckDebugIntegration:
@@ -76,59 +79,59 @@ class TestTypecheckDebugIntegration:
         debug.set(True)
         os.environ[ENABLE_ENV_KEY] = "1"
         os.environ[DISABLE_ENV_KEY] = "1"
-        
+
         with pytest.raises(RuntimeError, match="Cannot set both"):
             _should_typecheck()
-        
+
         # Clean up for remaining tests
         del os.environ[ENABLE_ENV_KEY]
         del os.environ[DISABLE_ENV_KEY]
-        
+
         # 1. DISABLE has highest priority (when set alone)
         debug.set(True)
         os.environ[DISABLE_ENV_KEY] = "1"
         assert not _should_typecheck()
-        
+
         # 2. ENABLE has second priority (when DISABLE not set)
         del os.environ[DISABLE_ENV_KEY]
         debug.set(False)
         os.environ[ENABLE_ENV_KEY] = "1"
         assert _should_typecheck()
-        
+
         # 3. Debug state has third priority
         del os.environ[ENABLE_ENV_KEY]
         debug.set(True)
         assert _should_typecheck()
-        
+
         # 4. Default is disabled
         debug.set(False)
         assert not _should_typecheck()
-    
+
     def test_dynamic_decorator_behavior(self):
         """Test that the @typecheck decorator responds to runtime changes."""
         from nshutils.typecheck import typecheck
-        
+
         # Start with typecheck disabled
         debug.set(False)
-        
+
         @typecheck
         def add_ints(x: int, y: int) -> int:
             return x + y
-        
+
         # Should work with wrong types when disabled
         result = add_ints("hello", " world")  # type: ignore
         assert result == "hello world"
-        
+
         # Enable debug - should now apply type checking
         debug.set(True)
-        
+
         # Should work with correct types
         assert add_ints(5, 3) == 8
-        
+
         # Should raise error with wrong types
         with pytest.raises(Exception):  # Could be TypeCheckError or similar
             add_ints("hello", " world")  # type: ignore
-        
+
         # Disable again - should work with wrong types
         debug.set(False)
         result = add_ints("goodbye", " world")  # type: ignore

@@ -77,53 +77,17 @@ else:
 
 log = logging.getLogger(__name__)
 
-DISABLE_ENV_KEY = "NSHUTILS_DISABLE_TYPECHECKING"
-ENABLE_ENV_KEY = "NSHUTILS_TYPECHECK"
-
 
 def _should_typecheck() -> bool:
     """
-    Determine if typechecking should be enabled based on environment variables.
-
-    Logic:
-    1. If both NSHUTILS_TYPECHECK and NSHUTILS_DISABLE_TYPECHECKING are set, raise an error
-    2. If NSHUTILS_DISABLE_TYPECHECKING is set, use `not NSHUTILS_DISABLE_TYPECHECKING`
-    3. If debug is enabled, enable typechecking by default
-    4. Otherwise, use NSHUTILS_TYPECHECK (defaults to False)
+    Determine if typechecking should be enabled.
 
     Returns:
         True if typechecking should be enabled, False otherwise.
     """
-    disable_value = os.environ.get(DISABLE_ENV_KEY)
-    enable_value = os.environ.get(ENABLE_ENV_KEY)
+    from . import config
 
-    # Check if both environment variables are set
-    if disable_value is not None and enable_value is not None:
-        raise RuntimeError(
-            f"Cannot set both {DISABLE_ENV_KEY} and {ENABLE_ENV_KEY} environment variables "
-            "at the same time. Please use only one."
-        )
-
-    # If the disable key is set, use its negation (for backward compatibility)
-    if disable_value is not None:
-        return not bool(int(disable_value))
-
-    # If the enable key is explicitly set, use it
-    if enable_value is not None:
-        return bool(int(enable_value))
-
-    # Check if debug is enabled - if so, enable typechecking by default
-    try:
-        from . import debug
-
-        if debug.enabled():
-            return True
-    except ImportError:
-        # If debug module is not available, continue with normal logic
-        pass
-
-    # Default: typechecking is disabled
-    return False
+    return config.typecheck_enabled()
 
 
 def typecheck_modules(modules: Sequence[str]):
@@ -218,10 +182,10 @@ def typecheck(fn: _TypeOrCallable, /) -> _TypeOrCallable:
     """
     Decorator to typecheck the function's arguments and return value.
     This decorator uses `jaxtyping` to enforce type checking.
-    
+
     The decorator dynamically checks if type checking is enabled at call time,
     allowing for runtime changes to debug/environment settings.
-    
+
     Args:
         fn: Function to typecheck.
     Returns:
@@ -232,7 +196,7 @@ def typecheck(fn: _TypeOrCallable, /) -> _TypeOrCallable:
 
     # Cache the jaxtyped version to avoid recreating it every time
     _jaxtyped_fn = None
-    
+
     def _get_jaxtyped_fn():
         nonlocal _jaxtyped_fn
         if _jaxtyped_fn is None:
@@ -247,13 +211,14 @@ def typecheck(fn: _TypeOrCallable, /) -> _TypeOrCallable:
         else:
             # Use the original function
             return fn(*args, **kwargs)
-    
+
     # Copy function metadata to the wrapper
     import functools
+
     wrapper = functools.wraps(fn)(wrapper)
-    
+
     # Store references to both versions for introspection (using setattr to avoid type checker issues)
-    setattr(wrapper, '__original__', fn)
-    setattr(wrapper, '__typecheck_enabled__', lambda: _should_typecheck())
-    
+    setattr(wrapper, "__original__", fn)
+    setattr(wrapper, "__typecheck_enabled__", lambda: _should_typecheck())
+
     return wrapper  # type: ignore[return-value]
