@@ -153,23 +153,15 @@ def _default_config() -> Config:
     if debug_env is not None:
         config.setdefault("debug", {})["enabled"] = _parse_env_bool(debug_env)
 
-    typecheck_env = os.environ.get("NSHUTILS_TYPECHECK")
-    disable_typecheck_env = os.environ.get("NSHUTILS_DISABLE_TYPECHECKING")
-
-    # Check for conflicting environment variables
-    if typecheck_env is not None and disable_typecheck_env is not None:
-        raise RuntimeError(
-            "Cannot set both NSHUTILS_TYPECHECK and NSHUTILS_DISABLE_TYPECHECKING environment variables "
-            "at the same time. Please use only one."
+    if (
+        typecheck := _getenv_deprecated(
+            "NSHUTILS_TYPECHECK",
+            "NSHUTILS_DISABLE_TYPECHECKING",
+            transform_fn=lambda x: _parse_env_bool(x),
+            deprecated_transform_fn=lambda x: not _parse_env_bool(x),
         )
-
-    if typecheck_env is not None:
-        config.setdefault("typecheck", {})["enabled"] = _parse_env_bool(typecheck_env)
-    elif disable_typecheck_env is not None:
-        # Backward compatibility: NSHUTILS_DISABLE_TYPECHECKING=1 means typecheck is disabled
-        config.setdefault("typecheck", {})["enabled"] = not _parse_env_bool(
-            disable_typecheck_env
-        )
+    ) is not None:
+        config.setdefault("typecheck", {})["enabled"] = typecheck
 
     # ActSave environment variables
     if (
