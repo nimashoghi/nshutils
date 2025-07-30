@@ -10,16 +10,104 @@ To install `nshutils`, simply run:
 pip install nshutils
 ```
 
+## Configuration
+
+`nshutils` features a unified configuration system that allows you to control various aspects of the library through environment variables, programmatic settings, or JSON configuration.
+
+### Environment Variables
+
+You can configure `nshutils` using environment variables:
+
+```bash
+# Enable debug mode
+export NSHUTILS_DEBUG=1
+
+# Enable typecheck (or disable with 0)
+export NSHUTILS_TYPECHECK=1
+
+# Enable ActSave with default temp directory
+export NSHUTILS_ACTSAVE=1
+
+# Enable ActSave with specific directory
+export NSHUTILS_ACTSAVE="/path/to/activations"
+
+# Set ActSave filters (comma-separated patterns)
+export NSHUTILS_ACTSAVE_FILTERS="layer*,attention*,encoder.*"
+
+# JSON configuration (overrides individual variables)
+export NSHUTILS_CONFIG='{"debug": {"enabled": true}, "typecheck": {"enabled": false}, "actsave": {"enabled": true, "save_dir": "/path/to/activations", "filters": ["layer*"]}}'
+
+# Comma-separated configuration
+export NSHUTILS_CONFIG="debug=true,typecheck=false,actsave=true"
+```
+
+### Programmatic Configuration
+
+You can also configure `nshutils` programmatically:
+
+```python
+from nshutils import config
+
+# Enable debug mode
+config.set(True, "debug")
+
+# Configure typecheck with explicit settings
+config.set({"enabled": True}, "typecheck")
+
+# Configure ActSave
+config.set({
+    "enabled": True,
+    "save_dir": "/path/to/activations",
+    "filters": ["layer*", "attention*"]
+}, "actsave")
+
+# Check current settings
+print(f"Debug enabled: {config.debug_enabled()}")
+print(f"Typecheck enabled: {config.typecheck_enabled()}")
+print(f"ActSave enabled: {config.actsave_enabled()}")
+
+# Temporary overrides using context managers
+with config.debug_override(False):
+    # Debug is temporarily disabled
+    pass
+
+with config.actsave_override({"enabled": True, "filters": ["encoder.*"]}):
+    # ActSave temporarily uses different filters
+    pass
+```
+
+### Configuration Hierarchy
+
+The configuration system follows a hierarchical approach:
+
+1. **Debug → Typecheck**: When debug is enabled, typecheck is automatically enabled unless explicitly overridden
+2. **Environment variables** take precedence over programmatic settings
+3. **Context managers** provide temporary overrides within their scope
+
 ## Features
 
 ### Typechecking
 
-`nshutils` provides a simple way to typecheck your code using the [`jaxtyping`](https://github.com/patrick-kidger/jaxtyping) library. Simply call `typecheck_this_module()` at the top of your module (i.e., in the root `__init__.py` file) to enable typechecking for the entire module:
+`nshutils` provides a simple way to typecheck your code using the [`jaxtyping`](https://github.com/patrick-kidger/jaxtyping) library. The typecheck system is now integrated with the unified configuration system.
+
+Enable typechecking globally:
+
+```bash
+export NSHUTILS_TYPECHECK=1
+```
+
+Or programmatically:
 
 ```python
-from nshutils.typecheck import typecheck_this_module
+from nshutils import config
+config.set(True, "typecheck")
 
-typecheck_this_module()
+# Now use typecheck decorators
+from nshutils.typecheck import typecheck
+
+@typecheck
+def my_function(x: Float[torch.Tensor, "batch seq"]) -> Float[torch.Tensor, "batch seq"]:
+    return x * 2
 ```
 
 You can also use the `tassert` function to assert that a value is of a certain type:
@@ -46,14 +134,39 @@ This will configure logging to use pretty formatting for PyTorch tensors and num
 
 ### Activation Saving/Loading
 
-`nshutils` provides a simple way to save and load activations from neural networks. To save activations, use the `ActSave` object:
+`nshutils` provides a simple way to save and load activations from neural networks. ActSave is now integrated with the unified configuration system.
+
+#### Basic Usage
+
+Enable ActSave via environment variables:
+
+```bash
+# Enable with default temp directory
+export NSHUTILS_ACTSAVE=1
+
+# Enable with specific directory
+export NSHUTILS_ACTSAVE="/path/to/activations"
+
+# Set filters (comma-separated patterns)
+export NSHUTILS_ACTSAVE_FILTERS="layer*,attention*"
+```
+
+Or programmatically:
 
 ```python
+from nshutils import config
 from nshutils import ActSave
+
+# Enable ActSave with configuration
+config.set({
+    "enabled": True,
+    "save_dir": "/path/to/activations",
+    "filters": ["layer*", "attention*"]
+}, "actsave")
 
 def my_model_forward(x):
     ...
-    # Save activations to "{save_dir}/encoder.activations/{idx}.npy"
+    # Save activations - automatically filtered
     ActSave({"encoder.activations": x})
 
     # Equivalent to the above
@@ -61,17 +174,66 @@ def my_model_forward(x):
         ActSave(activations=x)
     ...
 
-ActSave.enable(save_dir="path/to/activations")
 x = torch.randn(...)
 my_model_forward(x)
-# Activations are saved to disk under the "path/to/activations" directory
+# Activations are saved to disk under the configured directory
 ```
 
-This will save the `x` tensor to disk under the `encoder` prefix.
+You can also use the traditional explicit enable/disable pattern:
+
+```python
+from nshutils import ActSave
+
+# Explicit enable with filters
+ActSave.enable(save_dir="path/to/activations", filters=["layer*", "attention*"])
+
+def my_model_forward(x):
+    ActSave({"encoder.activations": x})
+
+x = torch.randn(...)
+my_model_forward(x)
+ActSave.disable()
+```
 
 #### Activation Filtering
 
-`ActSave` supports filtering to selectively save only certain activations based on fnmatch patterns. This is useful for reducing storage space and focusing on specific model components:
+ActSave supports filtering to selectively save only certain activations based on fnmatch patterns. This is useful for reducing storage space and focusing on specific model components.
+
+Configure filters via environment variables:
+
+```bash
+# Only save activations matching "layer*" or "attention*" patterns
+export NSHUTILS_ACTSAVE_FILTERS="layer*,attention*"
+export NSHUTILS_ACTSAVE=1
+```
+
+Or programmatically:
+
+```python
+from nshutils import config
+
+# Configure via unified config system
+config.set({
+    "enabled": True,
+    "save_dir": "/path/to/activations",
+    "filters": ["layer*", "attention*"]
+}, "actsave")
+
+# These will be saved (match filters)
+ActSave(
+    layer1_output=x1,
+    layer2_hidden=x2,
+    attention_weights=x3
+)
+
+# These will NOT be saved (don't match filters)
+ActSave(
+    decoder_output=x4,
+    embedding_vector=x5
+)
+```
+
+Traditional explicit filtering is also supported:
 
 ```python
 from nshutils import ActSave
@@ -106,22 +268,49 @@ The filtering patterns support standard Unix shell-style wildcards:
 Filters work with context prefixes, allowing you to save activations from specific model components:
 
 ```python
+from nshutils import config, ActSave
+
 # Only save activations from encoder layers
-filters = ["encoder.*"]
+config.set({
+    "enabled": True,
+    "save_dir": "/path/to/activations",
+    "filters": ["encoder.*"]
+}, "actsave")
 
-with ActSave.enabled(save_dir="path/to/activations", filters=filters):
-    # Decoder context - these won't be saved
-    with ActSave.context("decoder"):
-        ActSave(layer1_output=x1, attention=x2)
+# Decoder context - these won't be saved
+with ActSave.context("decoder"):
+    ActSave(layer1_output=x1, attention=x2)
 
-    # Encoder context - these will be saved
-    with ActSave.context("encoder"):
-        ActSave(layer1_output=x3, attention=x4)  # Saved as "encoder.layer1_output", "encoder.attention"
+# Encoder context - these will be saved
+with ActSave.context("encoder"):
+    ActSave(layer1_output=x3, attention=x4)  # Saved as "encoder.layer1_output", "encoder.attention"
 ```
 
 ##### Dynamic Filter Updates
 
 You can update filters during runtime:
+
+```python
+from nshutils import config
+
+# Set initial filters
+config.set({"enabled": True, "filters": ["layer*"]}, "actsave")
+
+# Initially only layer outputs saved
+ActSave(layer1_output=x1, attention_weights=x2)
+
+# Update filters
+config.set({"enabled": True, "filters": ["attention*"]}, "actsave")
+ActSave(layer2_output=x3, attention_weights=x4)  # Only attention_weights saved
+
+# Check current filters
+current_filters = config.actsave_filters()  # Returns ["attention*"]
+
+# Clear filters (save all)
+config.set({"enabled": True, "filters": None}, "actsave")
+```
+
+Traditional explicit filter management is also available:
 
 ```python
 ActSave.enable(save_dir="path/to/activations")
@@ -142,24 +331,27 @@ ActSave.set_filters(None)
 
 ##### Environment Variable Configuration
 
-You can configure ActSave and filtering through environment variables:
+You can configure ActSave and filtering through environment variables (now part of the unified configuration system):
 
 ```bash
 # Enable ActSave with default temp directory
-export ACTSAVE=1
+export NSHUTILS_ACTSAVE=1
 
 # Enable ActSave with specific directory
-export ACTSAVE="/path/to/activations"
+export NSHUTILS_ACTSAVE="/path/to/activations"
 
 # Set filters (comma-separated patterns)
-export ACTSAVE_FILTERS="layer*,attention*,encoder.*"
+export NSHUTILS_ACTSAVE_FILTERS="layer*,attention*,encoder.*"
 
 # Combine both
-export ACTSAVE="/path/to/activations"
-export ACTSAVE_FILTERS="layer*,attention*"
+export NSHUTILS_ACTSAVE="/path/to/activations"
+export NSHUTILS_ACTSAVE_FILTERS="layer*,attention*"
+
+# Or use the unified config format
+export NSHUTILS_CONFIG='{"actsave": {"enabled": true, "save_dir": "/path/to/activations", "filters": ["layer*", "attention*"]}}'
 ```
 
-The `ACTSAVE_FILTERS` environment variable supports:
+The `NSHUTILS_ACTSAVE_FILTERS` environment variable supports:
 
 - **Comma-separated patterns**: `"layer*,attention*,decoder.*"`
 - **Whitespace handling**: Extra spaces around commas are automatically trimmed

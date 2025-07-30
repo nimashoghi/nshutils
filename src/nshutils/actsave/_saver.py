@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import contextlib
 import fnmatch
-import os
 import tempfile
 import weakref
 from collections.abc import Callable, Mapping
@@ -252,7 +251,18 @@ class ActSaveProvider:
     @property
     def is_enabled(self) -> bool:
         """Returns True if ActSave is currently active and will save activations."""
-        return self.is_initialized and self._disable_count == 0
+        if not self.is_initialized:
+            # Check if we should auto-initialize from unified config
+            from .. import config
+
+            if config.actsave_enabled():
+                save_dir = config.actsave_save_dir()
+                filters = config.actsave_filters()
+                self.enable(save_dir, filters=filters)
+                return self._disable_count == 0
+            return False
+
+        return self._disable_count == 0
 
     def enable(self, save_dir: Path | None = None, *, filters: list[str] | None = None):
         """
@@ -309,11 +319,20 @@ class ActSaveProvider:
     @property
     def filters(self) -> list[str] | None:
         """Returns the current activation name filters."""
-        return self._filters
+        if (filters := self._filters) is not None:
+            return filters
+
+        # If no filters are set, check the unified config
+        from .. import config
+
+        return config.actsave_filters()
 
     @contextlib.contextmanager
     def enabled(
-        self, save_dir: Path | None = None, *, filters: list[str] | None = None
+        self,
+        save_dir: Path | None = None,
+        *,
+        filters: list[str] | None = None,
     ):
         """
         Context manager that enables the actsave functionality with the specified configuration.
@@ -353,30 +372,16 @@ class ActSaveProvider:
         self._disable_count = 0
         self._filters = None
 
-        # Check for environment variable `ACTSAVE` to automatically enable saving.
-        # If set to "1" or "true" (case-insensitive), activations are saved to a temporary directory.
-        # If set to a path, activations are saved to that path.
-        env_filters = None
-        if filters_env_var := os.environ.get("ACTSAVE_FILTERS"):
-            log.info(f"`ACTSAVE_FILTERS={filters_env_var}` detected, parsing filters.")
-            # Parse comma-separated filters, stripping whitespace
-            env_filters = [f.strip() for f in filters_env_var.split(",") if f.strip()]
-            if not env_filters:
-                log.warning("ACTSAVE_FILTERS was set but contained no valid filters.")
-                env_filters = None
-            else:
-                log.warning(
-                    f"ACTSAVE_FILTERS set to {env_filters}, only saving activations matching these patterns."
-                )
+        # Use unified config system for ActSave configuration
+        from .. import config
 
-        if env_var := os.environ.get("ACTSAVE"):
-            log.info(
-                f"`ACTSAVE={env_var}` detected, attempting to auto-enable activation saving."
-            )
-            if env_var.lower() in ("1", "true"):
-                self.enable(filters=env_filters)
-            else:
-                self.enable(Path(env_var), filters=env_filters)
+        if config.actsave_enabled():
+            log.info("ActSave auto-enabled via configuration.")
+
+            # Get save directory from config
+            save_dir = config.actsave_save_dir()
+
+            self.enable(save_dir)
 
     @contextlib.contextmanager
     def disabled(self, condition: bool | Callable[[], bool] = True):
@@ -488,7 +493,7 @@ class ActSaveProvider:
             acts = acts()
 
         # Pass the current filters on every save
-        self._saver.save(acts, _filters=self._filters, **kwargs)
+        self._saver.save(acts, _filters=self.filters, **kwargs)
 
     save = __call__
 

@@ -19,6 +19,14 @@ from nshutils.actsave import ActSave
 class TestActSaveFiltering:
     """Test suite for ActSave filtering functionality."""
 
+    def setup_method(self):
+        """Clean state before each test."""
+        ActSave.disable()
+
+    def teardown_method(self):
+        """Clean state after each test."""
+        ActSave.disable()
+
     def test_basic_filtering(self):
         """Test basic filtering with simple patterns."""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -360,7 +368,7 @@ class TestActSaveFiltering:
             assert saved_names == expected
 
     def test_environment_variable_filters(self):
-        """Test ACTSAVE_FILTERS environment variable parsing."""
+        """Test NSHUTILS_ACTSAVE_FILTERS environment variable parsing."""
         with tempfile.TemporaryDirectory() as temp_dir:
             save_dir = Path(temp_dir)
 
@@ -368,7 +376,11 @@ class TestActSaveFiltering:
             filters_str = "layer*, attention*"
 
             with mock.patch.dict(
-                os.environ, {"ACTSAVE": str(save_dir), "ACTSAVE_FILTERS": filters_str}
+                os.environ,
+                {
+                    "NSHUTILS_ACTSAVE": str(save_dir),
+                    "NSHUTILS_ACTSAVE_FILTERS": filters_str,
+                },
             ):
                 # Import a fresh instance to trigger environment variable parsing
                 from importlib import reload
@@ -403,7 +415,7 @@ class TestActSaveFiltering:
                     ActSaveEnv.disable()
 
     def test_environment_variable_filters_whitespace_handling(self):
-        """Test ACTSAVE_FILTERS handles whitespace correctly."""
+        """Test NSHUTILS_ACTSAVE_FILTERS handles whitespace correctly."""
         with tempfile.TemporaryDirectory() as temp_dir:
             save_dir = Path(temp_dir)
 
@@ -411,7 +423,11 @@ class TestActSaveFiltering:
             filters_str = " layer* , attention* ,  decoder.* "
 
             with mock.patch.dict(
-                os.environ, {"ACTSAVE": str(save_dir), "ACTSAVE_FILTERS": filters_str}
+                os.environ,
+                {
+                    "NSHUTILS_ACTSAVE": str(save_dir),
+                    "NSHUTILS_ACTSAVE_FILTERS": filters_str,
+                },
             ):
                 from importlib import reload
 
@@ -429,12 +445,13 @@ class TestActSaveFiltering:
                     ActSaveEnv.disable()
 
     def test_environment_variable_filters_empty_string(self):
-        """Test ACTSAVE_FILTERS with empty string."""
+        """Test NSHUTILS_ACTSAVE_FILTERS with empty string."""
         with tempfile.TemporaryDirectory() as temp_dir:
             save_dir = Path(temp_dir)
 
             with mock.patch.dict(
-                os.environ, {"ACTSAVE": str(save_dir), "ACTSAVE_FILTERS": ""}
+                os.environ,
+                {"NSHUTILS_ACTSAVE": str(save_dir), "NSHUTILS_ACTSAVE_FILTERS": ""},
             ):
                 from importlib import reload
 
@@ -452,12 +469,16 @@ class TestActSaveFiltering:
                     ActSaveEnv.disable()
 
     def test_environment_variable_filters_only_commas(self):
-        """Test ACTSAVE_FILTERS with only commas and whitespace."""
+        """Test NSHUTILS_ACTSAVE_FILTERS with only commas and whitespace."""
         with tempfile.TemporaryDirectory() as temp_dir:
             save_dir = Path(temp_dir)
 
             with mock.patch.dict(
-                os.environ, {"ACTSAVE": str(save_dir), "ACTSAVE_FILTERS": " , , , "}
+                os.environ,
+                {
+                    "NSHUTILS_ACTSAVE": str(save_dir),
+                    "NSHUTILS_ACTSAVE_FILTERS": " , , , ",
+                },
             ):
                 from importlib import reload
 
@@ -475,11 +496,12 @@ class TestActSaveFiltering:
                     ActSaveEnv.disable()
 
     def test_environment_variable_actsave_true_with_filters(self):
-        """Test ACTSAVE=true with ACTSAVE_FILTERS."""
+        """Test NSHUTILS_ACTSAVE=true with NSHUTILS_ACTSAVE_FILTERS."""
         filters_str = "test*"
 
         with mock.patch.dict(
-            os.environ, {"ACTSAVE": "true", "ACTSAVE_FILTERS": filters_str}
+            os.environ,
+            {"NSHUTILS_ACTSAVE": "true", "NSHUTILS_ACTSAVE_FILTERS": filters_str},
         ):
             from importlib import reload
 

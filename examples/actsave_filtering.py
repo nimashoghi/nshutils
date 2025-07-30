@@ -170,7 +170,7 @@ def environment_variable_example():
     print()
     print("To test this functionality, run:")
     print(
-        '  ACTSAVE=1 ACTSAVE_FILTERS="layer*,attention*" python examples/actsave_filtering.py'
+        '  NSHUTILS_ACTSAVE=1 NSHUTILS_ACTSAVE_FILTERS="layer*,attention*" python examples/actsave_filtering.py'
     )
     print()
     print(f"Current ActSave state:")
@@ -193,7 +193,7 @@ def environment_variable_example():
     else:
         print("ActSave is not enabled via environment variables.")
         print(
-            "Set ACTSAVE=1 and optionally ACTSAVE_FILTERS=pattern1,pattern2,... to enable it."
+            "Set NSHUTILS_ACTSAVE=1 and optionally NSHUTILS_ACTSAVE_FILTERS=pattern1,pattern2,... to enable it."
         )
 
     print()

@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
-from collections.abc import Mapping, MutableMapping
+from collections.abc import Callable, Mapping, MutableMapping
 from contextlib import contextmanager
 from contextvars import ContextVar
+from pathlib import Path
 from typing import Any, Final, TypeAlias, TypedDict, cast
 
-from typing_extensions import Self, assert_never
+from typing_extensions import Self, TypeVar, assert_never
 from typing_extensions import override as override_
+
+log = logging.getLogger(__name__)
 
 
 class BaseConfig(TypedDict, total=False):
@@ -29,17 +33,28 @@ class TypecheckConfig(BaseConfig, total=False):
     enabled: bool
 
 
+class ActSaveConfig(BaseConfig, total=False):
+    """Configuration for activation saving features."""
+
+    enabled: bool
+    save_dir: str
+    filters: list[str]
+
+
 class Config(BaseConfig, total=False):
     """Root configuration containing all feature configurations."""
 
     debug: DebugConfig
     typecheck: TypecheckConfig
+    actsave: ActSaveConfig
 
 
 _SENTINEL: Final = object()
 ROOT_PATH: Final = ""
 
-ValueType: TypeAlias = Config | DebugConfig | TypecheckConfig | bool | None
+ValueType: TypeAlias = (
+    Config | DebugConfig | TypecheckConfig | ActSaveConfig | bool | None
+)
 
 
 def _parse_env_bool(value: str) -> bool:
@@ -84,8 +99,45 @@ def _parse_env_config(env_key: str) -> Config:
                 config.setdefault("debug", {})["enabled"] = _parse_env_bool(value)
             elif key == "typecheck":
                 config.setdefault("typecheck", {})["enabled"] = _parse_env_bool(value)
+            elif key == "actsave":
+                config.setdefault("actsave", {})["enabled"] = _parse_env_bool(value)
 
     return config
+
+
+TNew = TypeVar("TNew", infer_variance=True, default=str)
+TOld = TypeVar("TOld", infer_variance=True, default=str)
+
+
+def _getenv_deprecated(
+    new_key: str,
+    deprecated_key: str,
+    transform_fn: Callable[[str], TNew] = lambda x: cast(TNew, x),
+    deprecated_transform_fn: Callable[[str], TOld] = lambda x: cast(TOld, x),
+    error_on_both: bool = True,
+):
+    """Get environment variable with deprecation warning."""
+    value = os.environ.get(new_key, None)
+    deprecated_value = os.environ.get(deprecated_key, None)
+
+    if error_on_both and (value is not None and deprecated_value is not None):
+        raise RuntimeError(
+            f"Cannot set both {new_key} and {deprecated_key} environment variables at the same time. "
+            f"{deprecated_key} is deprecated, use {new_key} instead."
+        )
+
+    if value is not None:
+        value = transform_fn(cast(str, value))
+        return value
+
+    if deprecated_value is not None:
+        log.warning(
+            f"Environment variable '{deprecated_key}' is deprecated, use '{new_key}' instead."
+        )
+        value = deprecated_transform_fn(cast(str, deprecated_value))
+        return value
+
+    return None
 
 
 def _default_config() -> Config:
@@ -119,6 +171,39 @@ def _default_config() -> Config:
             disable_typecheck_env
         )
 
+    # ActSave environment variables
+    if (
+        actsave_env := _getenv_deprecated(
+            "NSHUTILS_ACTSAVE",
+            "ACTSAVE",
+            transform_fn=lambda x: x,
+            deprecated_transform_fn=lambda x: x,
+        )
+    ) is not None:
+        actsave_config = config.setdefault("actsave", {})
+        if actsave_env.lower() in ("1", "true"):
+            actsave_config["enabled"] = True
+            # save_dir will use default (temp directory)
+        else:
+            actsave_config["enabled"] = True
+            actsave_config["save_dir"] = actsave_env
+
+    # ActSave filters
+
+    if (
+        actsave_filters_env := _getenv_deprecated(
+            "NSHUTILS_ACTSAVE_FILTERS",
+            "ACTSAVE_FILTERS",
+            transform_fn=lambda x: x,
+            deprecated_transform_fn=lambda x: x,
+        )
+    ) is not None:
+        actsave_config = config.setdefault("actsave", {})
+        # Parse comma-separated filters, stripping whitespace
+        filters = [f.strip() for f in actsave_filters_env.split(",") if f.strip()]
+        if filters:
+            actsave_config["filters"] = filters
+
     return config
 
 
@@ -133,6 +218,8 @@ def _config_for_value(value: ValueType, feature_path: str) -> BaseConfig | objec
                 return DebugConfig(enabled=value)
             elif feature_path == "typecheck":
                 return TypecheckConfig(enabled=value)
+            elif feature_path == "actsave":
+                return ActSaveConfig(enabled=value)
             else:
                 # For nested paths like "debug.something", just set enabled
                 return {"enabled": value}
@@ -322,4 +409,34 @@ def debug_override(value: bool | DebugConfig | None):
 def typecheck_override(value: bool | TypecheckConfig | None):
     """Temporarily override typecheck configuration."""
     with override(value, "typecheck"):
+        yield
+
+
+def actsave_enabled() -> bool:
+    """Check if actsave is enabled."""
+    return enabled("actsave")
+
+
+def actsave_config() -> ActSaveConfig:
+    """Get the effective actsave configuration."""
+    return cast(ActSaveConfig, config("actsave"))
+
+
+def actsave_save_dir() -> Path | None:
+    """Get the actsave save directory, if configured."""
+    cfg = actsave_config()
+    save_dir_str = cfg.get("save_dir")
+    return Path(save_dir_str) if save_dir_str else None
+
+
+def actsave_filters() -> list[str] | None:
+    """Get the actsave filters, if configured."""
+    cfg = actsave_config()
+    return cfg.get("filters")
+
+
+@contextmanager
+def actsave_override(value: bool | ActSaveConfig | None):
+    """Temporarily override actsave configuration."""
+    with override(value, "actsave"):
         yield
