@@ -108,6 +108,8 @@ def _parse_env_config(env_key: str) -> Config:
 TNew = TypeVar("TNew", infer_variance=True, default=str)
 TOld = TypeVar("TOld", infer_variance=True, default=str)
 
+_deprecation_warnings_issued = set[str]()
+
 
 def _getenv_deprecated(
     new_key: str,
@@ -116,7 +118,7 @@ def _getenv_deprecated(
     deprecated_transform_fn: Callable[[str], TOld] = lambda x: cast(TOld, x),
     error_on_both: bool = True,
 ):
-    """Get environment variable with deprecation warning."""
+    """Get environment variable with deprecation warning (warns once per deprecated key)."""
     value = os.environ.get(new_key, None)
     deprecated_value = os.environ.get(deprecated_key, None)
 
@@ -131,9 +133,12 @@ def _getenv_deprecated(
         return value
 
     if deprecated_value is not None:
-        log.warning(
-            f"Environment variable '{deprecated_key}' is deprecated, use '{new_key}' instead."
-        )
+        # Only warn once per deprecated key
+        if deprecated_key not in _deprecation_warnings_issued:
+            log.warning(
+                f"Environment variable '{deprecated_key}' is deprecated, use '{new_key}' instead."
+            )
+            _deprecation_warnings_issued.add(deprecated_key)
         value = deprecated_transform_fn(cast(str, deprecated_value))
         return value
 
