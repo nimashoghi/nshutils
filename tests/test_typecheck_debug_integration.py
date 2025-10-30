@@ -75,31 +75,30 @@ class TestTypecheckDebugIntegration:
 
     def test_priority_order(self):
         """Test the priority order of typecheck configuration."""
-        # Test that both env vars cannot be set simultaneously
-        debug.set(True)
+        # Test that when both env vars are set, the modern one takes precedence
+        debug.set(False)
         os.environ[ENABLE_ENV_KEY] = "1"
-        os.environ[DISABLE_ENV_KEY] = "1"
-
-        with pytest.raises(RuntimeError, match="Cannot set both"):
-            _should_typecheck()
+        os.environ[DISABLE_ENV_KEY] = "0"
+        # Modern ENABLE_ENV_KEY=1 should win, so typecheck is enabled
+        assert _should_typecheck()
 
         # Clean up for remaining tests
         del os.environ[ENABLE_ENV_KEY]
         del os.environ[DISABLE_ENV_KEY]
 
-        # 1. DISABLE has highest priority (when set alone)
-        debug.set(True)
-        os.environ[DISABLE_ENV_KEY] = "1"
-        assert not _should_typecheck()
-
-        # 2. ENABLE has second priority (when DISABLE not set)
-        del os.environ[DISABLE_ENV_KEY]
+        # 1. Modern ENABLE has highest priority
         debug.set(False)
         os.environ[ENABLE_ENV_KEY] = "1"
         assert _should_typecheck()
 
-        # 3. Debug state has third priority
+        # 2. Deprecated DISABLE works when modern key not set
         del os.environ[ENABLE_ENV_KEY]
+        debug.set(True)
+        os.environ[DISABLE_ENV_KEY] = "1"
+        assert not _should_typecheck()
+
+        # 3. Debug state has third priority
+        del os.environ[DISABLE_ENV_KEY]
         debug.set(True)
         assert _should_typecheck()
 

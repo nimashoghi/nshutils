@@ -116,17 +116,21 @@ def _getenv_deprecated(
     deprecated_key: str,
     transform_fn: Callable[[str], TNew] = lambda x: cast(TNew, x),
     deprecated_transform_fn: Callable[[str], TOld] = lambda x: cast(TOld, x),
-    error_on_both: bool = True,
 ):
     """Get environment variable with deprecation warning (warns once per deprecated key)."""
     value = os.environ.get(new_key, None)
     deprecated_value = os.environ.get(deprecated_key, None)
 
-    if error_on_both and (value is not None and deprecated_value is not None):
-        raise RuntimeError(
-            f"Cannot set both {new_key} and {deprecated_key} environment variables at the same time. "
-            f"{deprecated_key} is deprecated, use {new_key} instead."
-        )
+    # If both are set, prefer the new key and warn about the conflict
+    if value is not None and deprecated_value is not None:
+        if deprecated_key not in _deprecation_warnings_issued:
+            log.warning(
+                f"Both {new_key} and {deprecated_key} are set. "
+                f"Using {new_key}. {deprecated_key} is deprecated and will be ignored."
+            )
+            _deprecation_warnings_issued.add(deprecated_key)
+        value = transform_fn(cast(str, value))
+        return value
 
     if value is not None:
         value = transform_fn(cast(str, value))
