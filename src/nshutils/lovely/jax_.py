@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from typing_extensions import override
@@ -42,12 +42,13 @@ def _dtype_str(array: jax.Array) -> str:
 
 
 def _device(array: jax.Array) -> str:
-    from jaxlib.xla_extension import Device  # pyright: ignore[reportMissingImports]
+    device = cast(Any, array.device)
+    if getattr(device, "device_kind", None) == "cpu":
+        return "cpu"
 
-    if callable(device := array.device):
-        device = device()
+    if callable(device):
+        device = cast(Any, device())
 
-    device = cast(Device, device)
     if device.platform == "cpu":
         return "cpu"
 
