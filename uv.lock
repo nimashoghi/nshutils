@@ -555,7 +555,7 @@ wheels = [
 
 [[package]]
 name = "nshutils"
-version = "0.38.5"
+version = "0.38.6"
 source = { editable = "." }
 dependencies = [
     { name = "beartype" },
