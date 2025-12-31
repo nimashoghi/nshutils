@@ -278,9 +278,11 @@ def complex_stats(array: np.ndarray) -> LovelyStats:
 
     # Calculate magnitude (absolute value)
     magnitude = np.abs(array)
+    real_part = array.real  # pyright: ignore[reportAttributeAccessIssue]
+    imag_part = array.imag  # pyright: ignore[reportAttributeAccessIssue]
 
     # Check for special values in real or imaginary parts
-    stats["has_nan"] = bool(np.isnan(array.real).any() or np.isnan(array.imag).any())
+    stats["has_nan"] = bool(np.isnan(real_part).any() or np.isnan(imag_part).any())
 
     # Get statistics for magnitude
     good_mag = magnitude[np.isfinite(magnitude)]
@@ -292,8 +294,6 @@ def complex_stats(array: np.ndarray) -> LovelyStats:
         )
 
     # Get statistics for real and imaginary parts
-    real_part = array.real
-    imag_part = array.imag
 
     good_real = real_part[np.isfinite(real_part)]
     good_imag = imag_part[np.isfinite(imag_part)]
