@@ -83,7 +83,7 @@ def set_pytree_backend(name: BackendName):
         raise ImportError(f"Backend {backend} is not available.")
 
     _selected_backend = backend
-    log.critical(f"Pytree backend set to {backend}")
+    log.info(f"Pytree backend set to {backend}")
 
 
 @functools.lru_cache(maxsize=1)

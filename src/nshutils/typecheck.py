@@ -99,15 +99,14 @@ def typecheck_modules(modules: Sequence[str]):
     """
     # Check if typechecking should be enabled
     if not _should_typecheck():
-        log.critical("Type checking is disabled.")
+        log.info("Type checking is disabled.")
         return
 
     # Install the jaxtyping import hook for this module.
     from jaxtyping import install_import_hook
 
     install_import_hook(modules, "beartype.beartype")
-
-    log.critical(f"Type checking the following modules: {modules}")
+    log.info(f"Type checking the following modules: {modules}")
 
 
 def _get_frame_package_name_or_none(frame: _FrameType) -> str | None:
