@@ -295,3 +295,13 @@ Requires `pip install nshutils[snoop]`.
 - Use `import nshutils.typecheck as tc` (not individual imports from jaxtyping)
 - Prefer broad dtype categories (`Float` over `Float32`) unless precision matters
 - Use semantic dimension names (`batch`, `seq`, `channels`) not generic (`a`, `b`, `c`)
+- **Replace shape comments with `tc.tassert`** — shape comments are unchecked and rot; `tassert` is verified at runtime when typechecking is enabled and is a zero-cost no-op in production:
+
+  ```python
+  # BAD — comment is never verified, easily becomes stale
+  x = self.linear(x)  # (batch, seq, hidden)
+
+  # GOOD — verified at runtime, documents the shape, zero overhead when disabled
+  x = self.linear(x)
+  tc.tassert(tc.Float[torch.Tensor, "batch seq hidden"], x)
+  ```
