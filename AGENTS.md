@@ -64,3 +64,15 @@ bash scripts/publish.sh
 - No mutable default arguments — use `default_factory`.
 - `logging` module for diagnostics, never `print()` in library code.
 - Ruff ignores: `F722`, `F821` (jaxtyping string annotations), `E731`, `E741`.
+
+## Claude Code Skill
+
+nshutils ships a Claude Code skill for library usage guidance. Install it into any project:
+
+```bash
+# Install the skill to <cwd>/.claude/skills/using-nshutils/
+nshutils skill install
+
+# Install at user level (~/.claude/skills/using-nshutils/)
+nshutils skill install --global
+```
