@@ -142,10 +142,11 @@ def add(x: tc.Float[Tensor, "#batch dim"],
 
 #### Anonymous Dimensions (`_`)
 
-Matches any size, no cross-argument binding:
+Matches any size, no cross-argument binding. Can be given a descriptive name for documentation:
 
 ```python
-tc.Float[Tensor, "batch _ _"]       # 3D, only batch is checked
+tc.Float[Tensor, "batch _ _"]            # 3D, only batch is checked
+tc.Float[Tensor, "batch _seq _dim"]      # same — _seq and _dim are unchecked but self-documenting
 ```
 
 #### Ellipsis (`...`)
